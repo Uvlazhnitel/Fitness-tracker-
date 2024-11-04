@@ -1,0 +1,26 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build and Run wxWidgets Project",
+      "type": "shell",
+      "command": "sh",
+      "args": [
+        "-c",
+        "g++ -std=c++11 main.cpp $(wx-config --cxxflags --libs) -o main && ./main"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": ["$gcc"]
+    }
+  ]
+}
+  
