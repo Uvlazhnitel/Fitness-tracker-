@@ -25,7 +25,14 @@ private:
     wxBoxSizer* profileSizer;
     wxStaticText* textOnProfile;
     wxStaticText* textOnNutrition;
-    
+    wxDatePickerCtrl* dateOfBirth;
+    wxRadioBox* radioBox;
+    wxTextCtrl* lineForName;
+    wxTextCtrl* lineForWeight;
+    wxStaticText* textOnName;
+    wxStaticText* textOnGender;
+    wxStaticText* textOnDate;
+    wxStaticText* textOnWeight;
 
     wxButton* button1;
     wxButton* button2;
@@ -80,17 +87,31 @@ MyFrame::MyFrame(const wxString& title)
 
     wxArrayString choices;
     choices.Add("Male");
-    choices.Add("Female");
-    wxRadioBox* radioBox = new wxRadioBox(profile, wxID_ANY, "Your gender:", wxDefaultPosition, wxDefaultSize, choices, 1, wxRA_SPECIFY_ROWS);
-    wxDatePickerCtrl* dateOfBirth = new wxDatePickerCtrl(profile, wxID_ANY, wxDefaultDateTime, wxDefaultPosition, wxDefaultSize, wxDP_DROPDOWN);
+    choices.Add("Female");    
+    
+    radioBox = new wxRadioBox(profile, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, choices, 1, wxRA_SPECIFY_ROWS);
+    dateOfBirth = new wxDatePickerCtrl(profile, wxID_ANY, wxDefaultDateTime, wxDefaultPosition, wxDefaultSize, wxDP_DROPDOWN);
+    dateOfBirth->SetBackgroundColour(wxColour(100, 100, 100)); // Установить белый цвет фона
 
-    profileSizer->Add(radioBox, 1, wxALIGN_CENTER | wxALL, 10);
-    profileSizer->Add(dateOfBirth, 1, wxALIGN_CENTER | wxALL, 10);
+    
+    lineForName = new wxTextCtrl(profile, wxID_ANY, "", wxDefaultPosition, wxSize(150, 30));
+    lineForWeight = new wxTextCtrl(profile, wxID_ANY, "", wxDefaultPosition, wxSize(150, 30));
+    textOnName = new wxStaticText(profile, wxID_ANY, "Enter your name:");
+    textOnGender = new wxStaticText(profile, wxID_ANY, "Select your gender:");
+    textOnDate = new wxStaticText(profile, wxID_ANY, "Select date of birth:");
+    textOnWeight = new wxStaticText(profile, wxID_ANY, "Enter your weight:");
+
+    profileSizer->Add(textOnName, 0, wxALIGN_CENTER | wxTOP | wxLEFT | wxRIGHT, 10);
+    profileSizer->Add(lineForName, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT | wxBOTTOM, 10);
+    profileSizer->Add(textOnGender, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, 10);
+    profileSizer->Add(radioBox, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT | wxBOTTOM, 10);
+    profileSizer->Add(textOnDate, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, 10);
+    profileSizer->Add(dateOfBirth, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT | wxTOP | wxBOTTOM, 10); 
+    profileSizer->Add(textOnWeight, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, 10);
+    profileSizer->Add(lineForWeight, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, 10);
     profileSizer->AddStretchSpacer(1);
-
     profile->SetSizer(profileSizer);
-
-
+    
     // Hide all panels except the first one
     mainPage->Show();
     training->Hide();
