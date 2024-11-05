@@ -5,7 +5,6 @@
 #include <iostream>
 using namespace std;
 
-
 class MyApp : public wxApp {
 public:
     virtual bool OnInit();
@@ -44,7 +43,6 @@ private:
     wxString filteredValueName;
     wxString filteredValueWeight;
 
-
     wxButton* button1;
     wxButton* button2;
     wxButton* button3;
@@ -59,7 +57,10 @@ bool MyApp::OnInit() {
 MyFrame::MyFrame(const wxString& title)
        : wxFrame(NULL, wxID_ANY, title, wxDefaultPosition, wxSize(800, 600)) {
     
+
     buttonSizer = new wxBoxSizer(wxHORIZONTAL);
+    wxColour textColor(60, 60, 60);
+    wxColour textCtrlColor(255, 229, 180);
     // Main menu buttons
     button1 = new wxButton(this, wxID_ANY, "Training");
     button2 = new wxButton(this, wxID_ANY, "Journal");
@@ -83,7 +84,7 @@ MyFrame::MyFrame(const wxString& title)
     // Setting up content for each panel
     training->SetBackgroundColour(*wxBLUE);
     nutrition->SetBackgroundColour(*wxGREEN);
-    profile->SetBackgroundColour(*wxRED);
+    profile->SetBackgroundColour(wxColour(230, 230, 250));
     mainPage->SetBackgroundColour(*wxWHITE);
 
     // Adding elements to the nutrition panel
@@ -100,9 +101,9 @@ MyFrame::MyFrame(const wxString& title)
     choices.Add("Female");    
     
     radioBox = new wxRadioBox(profile, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, choices, 1, wxRA_SPECIFY_ROWS);
-    dateOfBirth = new wxDatePickerCtrl(profile, wxID_ANY, wxDefaultDateTime, wxDefaultPosition, wxDefaultSize, wxDP_DROPDOWN);
-    dateOfBirth->SetBackgroundColour(wxColour(100, 100, 100)); // Установить белый цвет фона
-
+    dateOfBirth = new wxDatePickerCtrl(profile, wxID_ANY, wxDefaultDateTime, wxDefaultPosition, wxDefaultSize, wxDP_DEFAULT);
+    wxDateTime minDate(1, wxDateTime::Jan, 1900);
+    dateOfBirth->SetRange(minDate, wxDateTime::Now());
     
     lineForName = new wxTextCtrl(profile, wxID_ANY, "", wxDefaultPosition, wxSize(150, 30));
     lineForWeight = new wxTextCtrl(profile, wxID_ANY, "", wxDefaultPosition, wxSize(150, 30));
@@ -111,6 +112,21 @@ MyFrame::MyFrame(const wxString& title)
     textOnDate = new wxStaticText(profile, wxID_ANY, "Select date of birth:");
     textOnWeight = new wxStaticText(profile, wxID_ANY, "Enter your weight:");
     buttonSave = new wxButton(profile, wxID_ANY, "Save");
+
+    textOnName -> SetForegroundColour(textColor);
+    textOnGender -> SetForegroundColour(textColor);
+    textOnDate -> SetForegroundColour(textColor);
+    textOnWeight -> SetForegroundColour(textColor);
+    radioBox -> SetForegroundColour(textColor);
+    dateOfBirth -> SetForegroundColour(textColor);
+    lineForName -> SetForegroundColour(textColor);
+    lineForWeight -> SetForegroundColour(textColor);
+    buttonSave -> SetForegroundColour(textColor);
+
+    lineForName -> SetBackgroundColour(textCtrlColor);
+    lineForWeight -> SetBackgroundColour(textCtrlColor);
+    dateOfBirth -> SetBackgroundColour(textCtrlColor);
+    radioBox -> SetBackgroundColour(textCtrlColor);
 
     profileSizer->Add(textOnName, 0, wxALIGN_CENTER | wxTOP | wxLEFT | wxRIGHT, 10);
     profileSizer->Add(lineForName, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT | wxBOTTOM, 10);
@@ -183,19 +199,16 @@ void MyFrame::OnNameText(wxCommandEvent& event) {
             break;
         }
     }
-
-    cout << filteredValueName << endl;
 }
 
 void MyFrame::OnWeightText(wxCommandEvent& event) {
     wxString value = lineForWeight->GetValue();
-    
     filteredValueWeight.clear();
     bool firstDigit = false;
     bool isSpace = false;
     for (wxChar ch : value) {
         if (wxIsdigit(ch)) {
-            if(isSpace and !firstDigit){
+            if(isSpace && !firstDigit){
                 lineForWeight->SetValue(filteredValueWeight);
                 break;
             } else if(isSpace){
@@ -213,7 +226,6 @@ void MyFrame::OnWeightText(wxCommandEvent& event) {
             break;
         } 
     }
-    cout<< filteredValueWeight << endl;
 }
 
 // Macro to launch the application
