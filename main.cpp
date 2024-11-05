@@ -1,7 +1,10 @@
 #include <wx/wx.h>
-#include <wx/datectrl.h>   
+#include <wx/datectrl.h>
 #include <wx/dateevt.h>
 #include <cctype>
+#include <iostream>
+using namespace std;
+
 
 class MyApp : public wxApp {
 public:
@@ -17,6 +20,7 @@ private:
     void OnButton2Click(wxCommandEvent& event);
     void OnButton3Click(wxCommandEvent& event);
     void OnNameText(wxCommandEvent& event);
+    void OnWeightText(wxCommandEvent& event);
 
     wxPanel* training;
     wxPanel* nutrition;
@@ -37,6 +41,9 @@ private:
     wxStaticText* textOnDate;
     wxStaticText* textOnWeight;
     wxButton* buttonSave;
+    wxString filteredValueName;
+    wxString filteredValueWeight;
+
 
     wxButton* button1;
     wxButton* button2;
@@ -116,7 +123,8 @@ MyFrame::MyFrame(const wxString& title)
     profileSizer->Add(buttonSave, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT | wxTOP, 20);
 
     lineForName->Bind(wxEVT_TEXT, &MyFrame::OnNameText, this);
-    
+    lineForWeight->Bind(wxEVT_TEXT, &MyFrame::OnWeightText, this);
+
     profileSizer->AddStretchSpacer(1);
     profile->SetSizer(profileSizer);
 
@@ -165,16 +173,47 @@ void MyFrame::OnButton3Click(wxCommandEvent& event) {
 
 void MyFrame::OnNameText(wxCommandEvent& event) {
     wxString value = lineForName->GetValue();
-    wxString filteredValue;
+    filteredValueName.clear();
     for (wxChar ch : value) {
-        if (wxIsalpha(ch)) {
-            filteredValue += ch;
+        if (wxIsalpha(ch) or ch == ' ') {
+            filteredValueName += ch;
         } else {
             wxMessageBox("Only letters are allowed in the name field", "Error", wxICON_ERROR);
-            lineForName->SetValue(filteredValue);
+            lineForName->SetValue(filteredValueName);
             break;
         }
     }
+
+    cout << filteredValueName << endl;
+}
+
+void MyFrame::OnWeightText(wxCommandEvent& event) {
+    wxString value = lineForWeight->GetValue();
+    
+    filteredValueWeight.clear();
+    bool firstDigit = false;
+    bool isSpace = false;
+    for (wxChar ch : value) {
+        if (wxIsdigit(ch)) {
+            if(isSpace and !firstDigit){
+                lineForWeight->SetValue(filteredValueWeight);
+                break;
+            } else if(isSpace){
+                wxMessageBox("Incorrect value", "Error", wxICON_ERROR);
+                lineForWeight->SetValue(filteredValueWeight);
+                break;
+            }
+            filteredValueWeight += ch;
+            firstDigit = true;
+        } else if (ch==' '){
+            isSpace = true;
+        }else if(ch != ' '){
+            wxMessageBox("Only integers are allowed in the weight field", "Error", wxICON_ERROR);
+            lineForWeight->SetValue(filteredValueWeight);
+            break;
+        } 
+    }
+    cout<< filteredValueWeight << endl;
 }
 
 // Macro to launch the application
