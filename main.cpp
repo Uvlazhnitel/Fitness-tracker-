@@ -33,6 +33,7 @@ private:
     wxStaticText* textOnGender;
     wxStaticText* textOnDate;
     wxStaticText* textOnWeight;
+    wxButton* buttonSave;
 
     wxButton* button1;
     wxButton* button2;
@@ -100,6 +101,7 @@ MyFrame::MyFrame(const wxString& title)
     textOnGender = new wxStaticText(profile, wxID_ANY, "Select your gender:");
     textOnDate = new wxStaticText(profile, wxID_ANY, "Select date of birth:");
     textOnWeight = new wxStaticText(profile, wxID_ANY, "Enter your weight:");
+    buttonSave = new wxButton(profile, wxID_ANY, "Save");
 
     profileSizer->Add(textOnName, 0, wxALIGN_CENTER | wxTOP | wxLEFT | wxRIGHT, 10);
     profileSizer->Add(lineForName, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT | wxBOTTOM, 10);
@@ -109,9 +111,11 @@ MyFrame::MyFrame(const wxString& title)
     profileSizer->Add(dateOfBirth, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT | wxTOP | wxBOTTOM, 10); 
     profileSizer->Add(textOnWeight, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, 10);
     profileSizer->Add(lineForWeight, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, 10);
+    profileSizer->Add(buttonSave, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT | wxTOP, 20);
+
     profileSizer->AddStretchSpacer(1);
     profile->SetSizer(profileSizer);
-    
+
     // Hide all panels except the first one
     mainPage->Show();
     training->Hide();
