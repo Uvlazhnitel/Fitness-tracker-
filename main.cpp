@@ -1,6 +1,8 @@
 #include <wx/wx.h>
 #include <wx/datectrl.h>   
 #include <wx/dateevt.h>
+#include <cctype>
+
 class MyApp : public wxApp {
 public:
     virtual bool OnInit();
@@ -14,6 +16,7 @@ private:
     void OnButton1Click(wxCommandEvent& event);
     void OnButton2Click(wxCommandEvent& event);
     void OnButton3Click(wxCommandEvent& event);
+    void OnNameText(wxCommandEvent& event);
 
     wxPanel* training;
     wxPanel* nutrition;
@@ -45,7 +48,6 @@ bool MyApp::OnInit() {
     frame->Show(true);
     return true;
 }
-
 
 MyFrame::MyFrame(const wxString& title)
        : wxFrame(NULL, wxID_ANY, title, wxDefaultPosition, wxSize(800, 600)) {
@@ -113,6 +115,8 @@ MyFrame::MyFrame(const wxString& title)
     profileSizer->Add(lineForWeight, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, 10);
     profileSizer->Add(buttonSave, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT | wxTOP, 20);
 
+    lineForName->Bind(wxEVT_TEXT, &MyFrame::OnNameText, this);
+    
     profileSizer->AddStretchSpacer(1);
     profile->SetSizer(profileSizer);
 
@@ -157,6 +161,20 @@ void MyFrame::OnButton3Click(wxCommandEvent& event) {
     nutrition->Hide();
     profile->Show();
     mainSizer->Layout();
+}
+
+void MyFrame::OnNameText(wxCommandEvent& event) {
+    wxString value = lineForName->GetValue();
+    wxString filteredValue;
+    for (wxChar ch : value) {
+        if (wxIsalpha(ch)) {
+            filteredValue += ch;
+        } else {
+            wxMessageBox("Only letters are allowed in the name field", "Error", wxICON_ERROR);
+            lineForName->SetValue(filteredValue);
+            break;
+        }
+    }
 }
 
 // Macro to launch the application
