@@ -26,6 +26,7 @@ public:
     void OnButton3Click(wxCommandEvent& event);
     void OnNameText(wxCommandEvent& event);
     void OnWeightText(wxCommandEvent& event);
+    void OnPassText(wxCommandEvent& event);
     void OnSaveButtonClick(wxCommandEvent& event);
 
     // UI components
@@ -53,7 +54,9 @@ public:
     wxButton* buttonSave;
     wxString filteredValueName;
     wxString filteredValueWeight;
+    wxString filteredValuePass;
     wxBoxSizer* radioSizer;
+    bool pressed = false;
 
     wxButton* button1;
     wxButton* button2;
@@ -178,6 +181,7 @@ MyFrame::MyFrame(const wxString& title)
     // Binding events to text fields and save button
     lineForName->Bind(wxEVT_TEXT, &MyFrame::OnNameText, this);
     lineForWeight->Bind(wxEVT_TEXT, &MyFrame::OnWeightText, this);
+    lineForPass->Bind(wxEVT_TEXT, &MyFrame::OnPassText, this);
     buttonSave->Bind(wxEVT_BUTTON, &MyFrame::OnSaveButtonClick, this);
     profileSizer->AddStretchSpacer(1);
     profile->SetSizer(profileSizer);
@@ -264,6 +268,8 @@ void MyFrame::OnNameText(wxCommandEvent& event) {
     }
 }
 
+
+
 // Event handler for weight text field
 void MyFrame::OnWeightText(wxCommandEvent& event) {
     wxString value = lineForWeight->GetValue();
@@ -281,6 +287,7 @@ void MyFrame::OnWeightText(wxCommandEvent& event) {
 
 // Event handler for save button
 void MyFrame::OnSaveButtonClick(wxCommandEvent& event) {
+    pressed = true;
     wxString name = lineForName->GetValue();
     wxString gender = radioMale->GetValue() ? "Male" : "Female";
     wxString dateOfBirthStr = dateOfBirth->GetValue().FormatISODate();
@@ -299,6 +306,36 @@ void MyFrame::OnSaveButtonClick(wxCommandEvent& event) {
         sqlite3_free(errorMessage);
     } else {
         wxMessageBox("Profile data saved successfully!", "Success", wxICON_INFORMATION);
+    }
+}
+
+void MyFrame::OnPassText(wxCommandEvent& event) {
+    wxString value = lineForPass->GetValue();
+    bool hasUpperCase = false;  // Флаг для проверки наличия заглавной буквы
+    filteredValuePass.clear();    
+    
+    for (wxChar ch : value) {
+        if (filteredValuePass.length() < 20) {
+            if (ch == ' ') {
+                // Удаляем пробел, не позволяя его вводить
+                lineForPass->SetValue(filteredValuePass);
+                lineForPass->SetInsertionPointEnd();
+                return;
+            }
+
+            if (wxIsupper(ch)) {
+                hasUpperCase = true; 
+            }
+
+            if (wxIsdigit(ch) || wxIsalpha(ch)) {
+                filteredValuePass += ch; 
+            }
+        } else {
+            wxMessageBox("Password must be less than 20 characters", "Error", wxICON_ERROR);
+            lineForPass->SetValue(filteredValuePass);
+            lineForPass->SetInsertionPointEnd();
+            return;
+        }
     }
 }
 
