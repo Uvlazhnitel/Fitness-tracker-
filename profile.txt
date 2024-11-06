@@ -1,0 +1,4 @@
+Name: Max
+Gender: Female
+Date of birth: 2004-12-31
+Weight: 45

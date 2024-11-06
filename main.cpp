@@ -2,6 +2,8 @@
 #include <wx/datectrl.h>
 #include <wx/dateevt.h>
 #include <cctype>
+#include <fstream>
+
 #include <iostream>
 using namespace std;
 
@@ -20,6 +22,7 @@ private:
     void OnButton3Click(wxCommandEvent& event);
     void OnNameText(wxCommandEvent& event);
     void OnWeightText(wxCommandEvent& event);
+    void OnSaveButtonClick(wxCommandEvent& event);
 
     wxPanel* training;
     wxPanel* nutrition;
@@ -32,7 +35,8 @@ private:
     wxStaticText* textOnProfile;
     wxStaticText* textOnNutrition;
     wxDatePickerCtrl* dateOfBirth;
-    wxRadioBox* radioBox;
+    wxRadioButton* radioMale;
+    wxRadioButton* radioFemale;
     wxTextCtrl* lineForName;
     wxTextCtrl* lineForWeight;
     wxStaticText* textOnName;
@@ -57,10 +61,10 @@ bool MyApp::OnInit() {
 MyFrame::MyFrame(const wxString& title)
        : wxFrame(NULL, wxID_ANY, title, wxDefaultPosition, wxSize(800, 600)) {
     
-
     buttonSizer = new wxBoxSizer(wxHORIZONTAL);
     wxColour textColor(60, 60, 60);
     wxColour textCtrlColor(255, 229, 180);
+    
     // Main menu buttons
     button1 = new wxButton(this, wxID_ANY, "Training");
     button2 = new wxButton(this, wxID_ANY, "Journal");
@@ -96,42 +100,55 @@ MyFrame::MyFrame(const wxString& title)
     // Adding elements to the profile panel
     profileSizer = new wxBoxSizer(wxVERTICAL);
 
-    wxArrayString choices;
-    choices.Add("Male");
-    choices.Add("Female");    
-    
-    radioBox = new wxRadioBox(profile, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, choices, 1, wxRA_SPECIFY_ROWS);
-    dateOfBirth = new wxDatePickerCtrl(profile, wxID_ANY, wxDefaultDateTime, wxDefaultPosition, wxDefaultSize, wxDP_DEFAULT);
-    wxDateTime minDate(1, wxDateTime::Jan, 1900);
-    dateOfBirth->SetRange(minDate, wxDateTime::Now());
-    
-    lineForName = new wxTextCtrl(profile, wxID_ANY, "", wxDefaultPosition, wxSize(150, 30));
-    lineForWeight = new wxTextCtrl(profile, wxID_ANY, "", wxDefaultPosition, wxSize(150, 30));
+    // Setting up text fields and radio buttons
     textOnName = new wxStaticText(profile, wxID_ANY, "Enter your name:");
     textOnGender = new wxStaticText(profile, wxID_ANY, "Select your gender:");
     textOnDate = new wxStaticText(profile, wxID_ANY, "Select date of birth:");
     textOnWeight = new wxStaticText(profile, wxID_ANY, "Enter your weight:");
+
+    // Radio buttons with labels using wxStaticText for custom color
+    radioMale = new wxRadioButton(profile, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxRB_GROUP);
+    wxStaticText* labelMale = new wxStaticText(profile, wxID_ANY, "Male");
+    labelMale->SetForegroundColour(textColor);
+
+    radioFemale = new wxRadioButton(profile, wxID_ANY, "", wxDefaultPosition, wxDefaultSize);
+    wxStaticText* labelFemale = new wxStaticText(profile, wxID_ANY, "Female");
+    labelFemale->SetForegroundColour(textColor);
+
+    dateOfBirth = new wxDatePickerCtrl(profile, wxID_ANY, wxDefaultDateTime, wxDefaultPosition, wxDefaultSize, wxDP_DEFAULT);
+    wxDateTime minDate(1, wxDateTime::Jan, 1900);
+    dateOfBirth->SetRange(minDate, wxDateTime::Now());
+
+    lineForName = new wxTextCtrl(profile, wxID_ANY, "", wxDefaultPosition, wxSize(150, 30));
+    lineForWeight = new wxTextCtrl(profile, wxID_ANY, "", wxDefaultPosition, wxSize(150, 30));
     buttonSave = new wxButton(profile, wxID_ANY, "Save");
 
-    textOnName -> SetForegroundColour(textColor);
-    textOnGender -> SetForegroundColour(textColor);
-    textOnDate -> SetForegroundColour(textColor);
-    textOnWeight -> SetForegroundColour(textColor);
-    radioBox -> SetForegroundColour(textColor);
-    dateOfBirth -> SetForegroundColour(textColor);
-    lineForName -> SetForegroundColour(textColor);
-    lineForWeight -> SetForegroundColour(textColor);
-    buttonSave -> SetForegroundColour(textColor);
+    // Setting colors for texts and controls
+    textOnName->SetForegroundColour(textColor);
+    textOnGender->SetForegroundColour(textColor);
+    textOnDate->SetForegroundColour(textColor);
+    textOnWeight->SetForegroundColour(textColor);
+    dateOfBirth->SetForegroundColour(textColor);
+    lineForName->SetForegroundColour(textColor);
+    lineForWeight->SetForegroundColour(textColor);
+    buttonSave->SetOwnBackgroundColour(wxColour(60, 60, 60));
 
-    lineForName -> SetBackgroundColour(textCtrlColor);
-    lineForWeight -> SetBackgroundColour(textCtrlColor);
-    dateOfBirth -> SetBackgroundColour(textCtrlColor);
-    radioBox -> SetBackgroundColour(textCtrlColor);
+    lineForName->SetBackgroundColour(textCtrlColor);
+    lineForWeight->SetBackgroundColour(textCtrlColor);
+    dateOfBirth->SetBackgroundColour(textCtrlColor);
 
+    // Adding elements to profileSizer
     profileSizer->Add(textOnName, 0, wxALIGN_CENTER | wxTOP | wxLEFT | wxRIGHT, 10);
     profileSizer->Add(lineForName, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT | wxBOTTOM, 10);
     profileSizer->Add(textOnGender, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, 10);
-    profileSizer->Add(radioBox, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT | wxBOTTOM, 10);
+    
+    wxBoxSizer* radioSizer = new wxBoxSizer(wxHORIZONTAL);
+    radioSizer->Add(radioMale, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
+    radioSizer->Add(labelMale, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
+    radioSizer->Add(radioFemale, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
+    radioSizer->Add(labelFemale, 0, wxALIGN_CENTER_VERTICAL);
+    profileSizer->Add(radioSizer, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT | wxBOTTOM, 10);
+
     profileSizer->Add(textOnDate, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, 10);
     profileSizer->Add(dateOfBirth, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT | wxTOP | wxBOTTOM, 10); 
     profileSizer->Add(textOnWeight, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, 10);
@@ -140,7 +157,7 @@ MyFrame::MyFrame(const wxString& title)
 
     lineForName->Bind(wxEVT_TEXT, &MyFrame::OnNameText, this);
     lineForWeight->Bind(wxEVT_TEXT, &MyFrame::OnWeightText, this);
-
+    buttonSave->Bind(wxEVT_BUTTON, &MyFrame::OnSaveButtonClick, this);
     profileSizer->AddStretchSpacer(1);
     profile->SetSizer(profileSizer);
 
@@ -191,7 +208,7 @@ void MyFrame::OnNameText(wxCommandEvent& event) {
     wxString value = lineForName->GetValue();
     filteredValueName.clear();
     for (wxChar ch : value) {
-        if (wxIsalpha(ch) or ch == ' ') {
+        if (wxIsalpha(ch) || ch == ' ') {
             filteredValueName += ch;
         } else {
             wxMessageBox("Only letters are allowed in the name field", "Error", wxICON_ERROR);
@@ -225,6 +242,31 @@ void MyFrame::OnWeightText(wxCommandEvent& event) {
             lineForWeight->SetValue(filteredValueWeight);
             break;
         } 
+    }
+}
+void MyFrame::OnSaveButtonClick(wxCommandEvent& event) {
+    wxString name = lineForName->GetValue();
+    bool isFemale = radioFemale->GetValue();
+    bool isMale = radioMale->GetValue();
+    wxString weight = lineForWeight->GetValue();
+    wxDateTime date = dateOfBirth->GetValue();
+
+    ofstream outFile("profile.txt");
+    if(outFile.is_open()){
+        outFile << "Name: " << name << endl;
+
+        if(isFemale){
+            outFile << "Gender: Female" << endl;
+        } else if(isMale){
+            outFile << "Gender: Male" << endl;
+        }
+
+        outFile << "Date of birth: " << date.FormatISODate() << endl;
+        outFile << "Weight: " << weight << endl;
+        outFile.close();
+        wxMessageBox("Profile saved", "Success", wxICON_INFORMATION);
+    } else {
+        wxMessageBox("Error saving profile", "Error", wxICON_ERROR);
     }
 }
 
