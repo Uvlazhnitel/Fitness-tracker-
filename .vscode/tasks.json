@@ -7,7 +7,7 @@
       "command": "sh",
       "args": [
         "-c",
-        "g++ -std=c++11 main.cpp $(wx-config --cxxflags --libs) -o main && ./main"
+        "g++ -std=c++11 main.cpp $(wx-config --cxxflags --libs) -lsqlite3 -o main && ./main"
       ],
       "group": {
         "kind": "build",

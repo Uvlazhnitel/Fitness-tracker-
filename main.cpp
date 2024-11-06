@@ -2,7 +2,9 @@
 #include <wx/datectrl.h>
 #include <wx/dateevt.h>
 #include <cctype>
+#include <sqlite3.h> 
 #include <fstream>
+#include <wx/radiobut.h>
 
 #include <iostream>
 using namespace std;
@@ -15,8 +17,8 @@ public:
 class MyFrame : public wxFrame {
 public:
     MyFrame(const wxString& title);
-
-private:
+    ~MyFrame();
+    void InitializeDatabase();
     void OnButton1Click(wxCommandEvent& event);
     void OnButton2Click(wxCommandEvent& event);
     void OnButton3Click(wxCommandEvent& event);
@@ -50,6 +52,7 @@ private:
     wxButton* button1;
     wxButton* button2;
     wxButton* button3;
+    sqlite3* db;
 };
 
 bool MyApp::OnInit() {
@@ -60,7 +63,8 @@ bool MyApp::OnInit() {
 
 MyFrame::MyFrame(const wxString& title)
        : wxFrame(NULL, wxID_ANY, title, wxDefaultPosition, wxSize(800, 600)) {
-    
+
+    InitializeDatabase();
     buttonSizer = new wxBoxSizer(wxHORIZONTAL);
     wxColour textColor(60, 60, 60);
     wxColour textCtrlColor(255, 229, 180);
@@ -179,6 +183,28 @@ MyFrame::MyFrame(const wxString& title)
     SetSizer(mainSizer);
 }
 
+void MyFrame::InitializeDatabase() {
+    int exit = sqlite3_open("users_data.db", &db);
+    if (exit) {
+        wxMessageBox("Error opening database", "Error", wxICON_ERROR);
+        return;
+    }
+
+    const char* sql = "CREATE TABLE IF NOT EXISTS Users ("
+                      "ID INTEGER PRIMARY KEY AUTOINCREMENT, "
+                      "Name TEXT NOT NULL, "
+                      "Gender TEXT NOT NULL, "
+                      "DateOfBirth TEXT NOT NULL, "
+                      "Weight TEXT NOT NULL);";
+    char* errorMessage;
+    exit = sqlite3_exec(db, sql, NULL, 0, &errorMessage);
+    if (exit != SQLITE_OK) {
+        wxMessageBox("Failed to create table", "Error", wxICON_ERROR);
+        sqlite3_free(errorMessage);
+    }
+}
+
+
 // Event handlers for buttons
 void MyFrame::OnButton1Click(wxCommandEvent& event) {
     mainPage->Hide();
@@ -244,30 +270,31 @@ void MyFrame::OnWeightText(wxCommandEvent& event) {
         } 
     }
 }
+
 void MyFrame::OnSaveButtonClick(wxCommandEvent& event) {
     wxString name = lineForName->GetValue();
-    bool isFemale = radioFemale->GetValue();
-    bool isMale = radioMale->GetValue();
+    wxString gender = radioMale->GetValue() ? "Male" : "Female";
+    wxString dateOfBirthStr = dateOfBirth->GetValue().FormatISODate();
     wxString weight = lineForWeight->GetValue();
-    wxDateTime date = dateOfBirth->GetValue();
 
-    ofstream outFile("profile.txt");
-    if(outFile.is_open()){
-        outFile << "Name: " << name << endl;
-
-        if(isFemale){
-            outFile << "Gender: Female" << endl;
-        } else if(isMale){
-            outFile << "Gender: Male" << endl;
-        }
-
-        outFile << "Date of birth: " << date.FormatISODate() << endl;
-        outFile << "Weight: " << weight << endl;
-        outFile.close();
-        wxMessageBox("Profile saved", "Success", wxICON_INFORMATION);
+    string sql = "INSERT INTO Users (Name, Gender, DateOfBirth, Weight) VALUES ('" + 
+                      string(name.mb_str()) + "', '" +
+                      string(gender.mb_str()) + "', '" +
+                      string(dateOfBirthStr.mb_str()) + "', '" +
+                      string(weight.mb_str()) + "');";
+    
+    char* errorMessage;
+    int exit = sqlite3_exec(db, sql.c_str(), NULL, 0, &errorMessage);
+    if (exit != SQLITE_OK) {
+        wxMessageBox("Failed to save profile data", "Error", wxICON_ERROR);
+        sqlite3_free(errorMessage);
     } else {
-        wxMessageBox("Error saving profile", "Error", wxICON_ERROR);
+        wxMessageBox("Profile data saved successfully!", "Success", wxICON_INFORMATION);
     }
+}
+
+MyFrame::~MyFrame() {
+    sqlite3_close(db);
 }
 
 // Macro to launch the application
