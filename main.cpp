@@ -119,7 +119,7 @@ MyFrame::MyFrame(const wxString& title)
     textOnName = new wxStaticText(profile, wxID_ANY, "Enter your name:");
     textOnGender = new wxStaticText(profile, wxID_ANY, "Select your gender:");
     textOnDate = new wxStaticText(profile, wxID_ANY, "Select date of birth:");
-    textOnWeight = new wxStaticText(profile, wxID_ANY, "Enter your weight:");
+    textOnWeight = new wxStaticText(profile, wxID_ANY, "Enter your weight (kg):");
     textOnPass = new wxStaticText(profile, wxID_ANY, "Enter your password:");
 
     // Radio buttons with labels using wxStaticText for custom color
@@ -268,8 +268,6 @@ void MyFrame::OnNameText(wxCommandEvent& event) {
     }
 }
 
-
-
 // Event handler for weight text field
 void MyFrame::OnWeightText(wxCommandEvent& event) {
     wxString value = lineForWeight->GetValue();
@@ -277,12 +275,22 @@ void MyFrame::OnWeightText(wxCommandEvent& event) {
     for (wxChar ch : value) {
         if (wxIsdigit(ch)) {
             filteredValueWeight += ch;
+        } else if (ch == ' ') {
+            lineForWeight->SetValue(filteredValueWeight);
+            lineForWeight->SetInsertionPointEnd();
+            return;
         } else {
             wxMessageBox("Only integers are allowed in the weight field", "Error", wxICON_ERROR);
             lineForWeight->SetValue(filteredValueWeight);
             break;
         }
     }
+
+    // if(filteredValueWeight.length() > 3) {
+    //     wxMessageBox("Weight must be less than 1000", "Error", wxICON_ERROR);
+    //     lineForWeight->SetValue(filteredValueWeight);
+    //     lineForWeight->SetInsertionPointEnd();
+    // }
 }
 
 // Event handler for save button
@@ -311,13 +319,12 @@ void MyFrame::OnSaveButtonClick(wxCommandEvent& event) {
 
 void MyFrame::OnPassText(wxCommandEvent& event) {
     wxString value = lineForPass->GetValue();
-    bool hasUpperCase = false;  // Флаг для проверки наличия заглавной буквы
+    bool hasUpperCase = false;  
     filteredValuePass.clear();    
     
     for (wxChar ch : value) {
         if (filteredValuePass.length() < 20) {
             if (ch == ' ') {
-                // Удаляем пробел, не позволяя его вводить
                 lineForPass->SetValue(filteredValuePass);
                 lineForPass->SetInsertionPointEnd();
                 return;
