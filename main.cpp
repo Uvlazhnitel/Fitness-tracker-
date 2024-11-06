@@ -9,11 +9,13 @@
 #include <iostream>
 using namespace std;
 
+// Application class
 class MyApp : public wxApp {
 public:
     virtual bool OnInit();
 };
 
+// Main frame class
 class MyFrame : public wxFrame {
 public:
     MyFrame(const wxString& title);
@@ -26,6 +28,7 @@ public:
     void OnWeightText(wxCommandEvent& event);
     void OnSaveButtonClick(wxCommandEvent& event);
 
+    // UI components
     wxPanel* training;
     wxPanel* nutrition;
     wxPanel* profile;
@@ -41,13 +44,16 @@ public:
     wxRadioButton* radioFemale;
     wxTextCtrl* lineForName;
     wxTextCtrl* lineForWeight;
+    wxTextCtrl* lineForPass;
     wxStaticText* textOnName;
     wxStaticText* textOnGender;
     wxStaticText* textOnDate;
     wxStaticText* textOnWeight;
+    wxStaticText* textOnPass;
     wxButton* buttonSave;
     wxString filteredValueName;
     wxString filteredValueWeight;
+    wxBoxSizer* radioSizer;
 
     wxButton* button1;
     wxButton* button2;
@@ -55,12 +61,14 @@ public:
     sqlite3* db;
 };
 
+// Application initialization
 bool MyApp::OnInit() {
     MyFrame* frame = new MyFrame("Application on wxWidgets");
     frame->Show(true);
     return true;
 }
 
+// Main frame constructor
 MyFrame::MyFrame(const wxString& title)
        : wxFrame(NULL, wxID_ANY, title, wxDefaultPosition, wxSize(800, 600)) {
 
@@ -109,6 +117,7 @@ MyFrame::MyFrame(const wxString& title)
     textOnGender = new wxStaticText(profile, wxID_ANY, "Select your gender:");
     textOnDate = new wxStaticText(profile, wxID_ANY, "Select date of birth:");
     textOnWeight = new wxStaticText(profile, wxID_ANY, "Enter your weight:");
+    textOnPass = new wxStaticText(profile, wxID_ANY, "Enter your password:");
 
     // Radio buttons with labels using wxStaticText for custom color
     radioMale = new wxRadioButton(profile, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxRB_GROUP);
@@ -125,6 +134,8 @@ MyFrame::MyFrame(const wxString& title)
 
     lineForName = new wxTextCtrl(profile, wxID_ANY, "", wxDefaultPosition, wxSize(150, 30));
     lineForWeight = new wxTextCtrl(profile, wxID_ANY, "", wxDefaultPosition, wxSize(150, 30));
+    lineForPass = new wxTextCtrl(profile, wxID_ANY, "", wxDefaultPosition, wxSize(150, 30));
+
     buttonSave = new wxButton(profile, wxID_ANY, "Save");
 
     // Setting colors for texts and controls
@@ -132,21 +143,24 @@ MyFrame::MyFrame(const wxString& title)
     textOnGender->SetForegroundColour(textColor);
     textOnDate->SetForegroundColour(textColor);
     textOnWeight->SetForegroundColour(textColor);
+    textOnPass->SetForegroundColour(textColor);
     dateOfBirth->SetForegroundColour(textColor);
     lineForName->SetForegroundColour(textColor);
     lineForWeight->SetForegroundColour(textColor);
+    lineForPass->SetForegroundColour(textColor);
     buttonSave->SetOwnBackgroundColour(wxColour(60, 60, 60));
 
     lineForName->SetBackgroundColour(textCtrlColor);
     lineForWeight->SetBackgroundColour(textCtrlColor);
     dateOfBirth->SetBackgroundColour(textCtrlColor);
+    lineForPass->SetBackgroundColour(textCtrlColor);
 
     // Adding elements to profileSizer
     profileSizer->Add(textOnName, 0, wxALIGN_CENTER | wxTOP | wxLEFT | wxRIGHT, 10);
     profileSizer->Add(lineForName, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT | wxBOTTOM, 10);
     profileSizer->Add(textOnGender, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, 10);
     
-    wxBoxSizer* radioSizer = new wxBoxSizer(wxHORIZONTAL);
+    radioSizer = new wxBoxSizer(wxHORIZONTAL);
     radioSizer->Add(radioMale, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
     radioSizer->Add(labelMale, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
     radioSizer->Add(radioFemale, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
@@ -157,8 +171,11 @@ MyFrame::MyFrame(const wxString& title)
     profileSizer->Add(dateOfBirth, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT | wxTOP | wxBOTTOM, 10); 
     profileSizer->Add(textOnWeight, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, 10);
     profileSizer->Add(lineForWeight, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, 10);
+    profileSizer->Add(textOnPass, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT | wxTOP, 10);
+    profileSizer->Add(lineForPass, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT | wxBOTTOM, 10);
     profileSizer->Add(buttonSave, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT | wxTOP, 20);
 
+    // Binding events to text fields and save button
     lineForName->Bind(wxEVT_TEXT, &MyFrame::OnNameText, this);
     lineForWeight->Bind(wxEVT_TEXT, &MyFrame::OnWeightText, this);
     buttonSave->Bind(wxEVT_BUTTON, &MyFrame::OnSaveButtonClick, this);
@@ -183,6 +200,7 @@ MyFrame::MyFrame(const wxString& title)
     SetSizer(mainSizer);
 }
 
+// Initialize the database
 void MyFrame::InitializeDatabase() {
     int exit = sqlite3_open("users_data.db", &db);
     if (exit) {
@@ -204,8 +222,7 @@ void MyFrame::InitializeDatabase() {
     }
 }
 
-
-// Event handlers for buttons
+// Event handler for Training button
 void MyFrame::OnButton1Click(wxCommandEvent& event) {
     mainPage->Hide();
     training->Show();
@@ -214,6 +231,7 @@ void MyFrame::OnButton1Click(wxCommandEvent& event) {
     mainSizer->Layout();
 }
 
+// Event handler for Journal button
 void MyFrame::OnButton2Click(wxCommandEvent& event) {
     mainPage->Hide();
     training->Hide();
@@ -222,6 +240,7 @@ void MyFrame::OnButton2Click(wxCommandEvent& event) {
     mainSizer->Layout();
 }
 
+// Event handler for Profile button
 void MyFrame::OnButton3Click(wxCommandEvent& event) {
     mainPage->Hide();
     training->Hide();
@@ -230,6 +249,7 @@ void MyFrame::OnButton3Click(wxCommandEvent& event) {
     mainSizer->Layout();
 }
 
+// Event handler for name text field
 void MyFrame::OnNameText(wxCommandEvent& event) {
     wxString value = lineForName->GetValue();
     filteredValueName.clear();
@@ -244,33 +264,22 @@ void MyFrame::OnNameText(wxCommandEvent& event) {
     }
 }
 
+// Event handler for weight text field
 void MyFrame::OnWeightText(wxCommandEvent& event) {
     wxString value = lineForWeight->GetValue();
     filteredValueWeight.clear();
-    bool firstDigit = false;
-    bool isSpace = false;
     for (wxChar ch : value) {
         if (wxIsdigit(ch)) {
-            if(isSpace && !firstDigit){
-                lineForWeight->SetValue(filteredValueWeight);
-                break;
-            } else if(isSpace){
-                wxMessageBox("Incorrect value", "Error", wxICON_ERROR);
-                lineForWeight->SetValue(filteredValueWeight);
-                break;
-            }
             filteredValueWeight += ch;
-            firstDigit = true;
-        } else if (ch==' '){
-            isSpace = true;
-        }else if(ch != ' '){
+        } else {
             wxMessageBox("Only integers are allowed in the weight field", "Error", wxICON_ERROR);
             lineForWeight->SetValue(filteredValueWeight);
             break;
-        } 
+        }
     }
 }
 
+// Event handler for save button
 void MyFrame::OnSaveButtonClick(wxCommandEvent& event) {
     wxString name = lineForName->GetValue();
     wxString gender = radioMale->GetValue() ? "Male" : "Female";
@@ -293,6 +302,7 @@ void MyFrame::OnSaveButtonClick(wxCommandEvent& event) {
     }
 }
 
+// Destructor to close the database
 MyFrame::~MyFrame() {
     sqlite3_close(db);
 }
