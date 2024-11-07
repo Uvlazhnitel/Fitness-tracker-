@@ -1,10 +1,12 @@
 #include <wx/wx.h>
 #include <wx/datectrl.h>
 #include <wx/dateevt.h>
+#include <cctype>
 #include <sqlite3.h>
+#include <fstream>
 #include <wx/radiobut.h>
+
 #include <iostream>
-#include <string>
 using namespace std;
 
 // Application class
@@ -26,13 +28,6 @@ public:
     void OnWeightText(wxCommandEvent& event);
     void OnPassText(wxCommandEvent& event);
     void OnSaveButtonClick(wxCommandEvent& event);
-
-private:
-    void SetupUI();
-    void SetupProfilePanel();
-    void SetupNutritionPanel();
-    void SetupMainMenuButtons();
-    void BindEvents();
 
     // UI components
     wxPanel* training;
@@ -84,7 +79,7 @@ MyFrame::MyFrame(const wxString& title)
     buttonSizer = new wxBoxSizer(wxHORIZONTAL);
     wxColour textColor(60, 60, 60);
     wxColour textCtrlColor(255, 229, 180);
-    
+
     // Main menu buttons
     button1 = new wxButton(this, wxID_ANY, "Training");
     button2 = new wxButton(this, wxID_ANY, "Journal");
@@ -167,7 +162,7 @@ MyFrame::MyFrame(const wxString& title)
     profileSizer->Add(textOnName, 0, wxALIGN_CENTER | wxTOP | wxLEFT | wxRIGHT, 10);
     profileSizer->Add(lineForName, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT | wxBOTTOM, 10);
     profileSizer->Add(textOnGender, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, 10);
-    
+
     radioSizer = new wxBoxSizer(wxHORIZONTAL);
     radioSizer->Add(radioMale, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
     radioSizer->Add(labelMale, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
@@ -176,7 +171,7 @@ MyFrame::MyFrame(const wxString& title)
     profileSizer->Add(radioSizer, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT | wxBOTTOM, 10);
 
     profileSizer->Add(textOnDate, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, 10);
-    profileSizer->Add(dateOfBirth, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT | wxTOP | wxBOTTOM, 10); 
+    profileSizer->Add(dateOfBirth, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT | wxTOP | wxBOTTOM, 10);
     profileSizer->Add(textOnWeight, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, 10);
     profileSizer->Add(lineForWeight, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, 10);
     profileSizer->Add(textOnPass, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT | wxTOP, 10);
@@ -200,11 +195,11 @@ MyFrame::MyFrame(const wxString& title)
     // Add buttons and panels to the main sizer
     mainSizer = new wxBoxSizer(wxVERTICAL);
 
-    mainSizer->Add(buttonSizer, 0, wxEXPAND); 
+    mainSizer->Add(buttonSizer, 0, wxEXPAND);
     mainSizer->Add(mainPage, 1, wxEXPAND);
-    mainSizer->Add(training, 1, wxEXPAND);      
-    mainSizer->Add(nutrition, 1, wxEXPAND);     
-    mainSizer->Add(profile, 1, wxEXPAND);      
+    mainSizer->Add(training, 1, wxEXPAND);
+    mainSizer->Add(nutrition, 1, wxEXPAND);
+    mainSizer->Add(profile, 1, wxEXPAND);
 
     SetSizer(mainSizer);
 }
@@ -217,17 +212,44 @@ void MyFrame::InitializeDatabase() {
         return;
     }
 
+    char* errorMessage;
+
+    // Создаем таблицу Users, если она не существует
     const char* sql = "CREATE TABLE IF NOT EXISTS Users ("
                       "ID INTEGER PRIMARY KEY AUTOINCREMENT, "
                       "Name TEXT NOT NULL, "
                       "Gender TEXT NOT NULL, "
                       "DateOfBirth TEXT NOT NULL, "
-                      "Weight TEXT NOT NULL);";
-    char* errorMessage;
+                      "Weight TEXT NOT NULL);";  // Без Password
     exit = sqlite3_exec(db, sql, NULL, 0, &errorMessage);
     if (exit != SQLITE_OK) {
-        wxMessageBox("Failed to create table", "Error", wxICON_ERROR);
+        wxMessageBox(wxString::Format("Failed to create table: %s", errorMessage), "Error", wxICON_ERROR);
         sqlite3_free(errorMessage);
+        return;
+    }
+
+    bool hasPasswordColumn = false;
+    const char* checkColumnSql = "PRAGMA table_info(Users);";
+    sqlite3_stmt* stmt;
+    if (sqlite3_prepare_v2(db, checkColumnSql, -1, &stmt, nullptr) == SQLITE_OK) {
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            const char* columnName = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+            if (strcmp(columnName, "Password") == 0) {
+                hasPasswordColumn = true;
+                break;
+            }
+        }
+        sqlite3_finalize(stmt);
+    }
+
+    // Добавляем поле Password, если оно отсутствует
+    if (!hasPasswordColumn) {
+        const char* addColumnSql = "ALTER TABLE Users ADD COLUMN Password TEXT;";
+        exit = sqlite3_exec(db, addColumnSql, NULL, 0, &errorMessage);
+        if (exit != SQLITE_OK) {
+            wxMessageBox(wxString::Format("Failed to add Password column: %s", errorMessage), "Error", wxICON_ERROR);
+            sqlite3_free(errorMessage);
+        }
     }
 }
 
@@ -305,13 +327,16 @@ void MyFrame::OnSaveButtonClick(wxCommandEvent& event) {
     wxString gender = radioMale->GetValue() ? "Male" : "Female";
     wxString dateOfBirthStr = dateOfBirth->GetValue().FormatISODate();
     wxString weight = lineForWeight->GetValue();
+    wxString pass = lineForPass->GetValue();  // Получаем значение пароля
 
-    string sql = "INSERT INTO Users (Name, Gender, DateOfBirth, Weight) VALUES ('" + 
-                      string(name.mb_str()) + "', '" +
-                      string(gender.mb_str()) + "', '" +
-                      string(dateOfBirthStr.mb_str()) + "', '" +
-                      string(weight.mb_str()) + "');";
-    
+    // Формируем SQL-запрос с добавлением пароля
+    string sql = "INSERT INTO Users (Name, Gender, DateOfBirth, Weight, Password) VALUES ('" +
+                 string(name.mb_str()) + "', '" +
+                 string(gender.mb_str()) + "', '" +
+                 string(dateOfBirthStr.mb_str()) + "', '" +
+                 string(weight.mb_str()) + "', '" +
+                 string(pass.mb_str()) + "');";
+
     char* errorMessage;
     int exit = sqlite3_exec(db, sql.c_str(), NULL, 0, &errorMessage);
     if (exit != SQLITE_OK) {
@@ -320,13 +345,14 @@ void MyFrame::OnSaveButtonClick(wxCommandEvent& event) {
     } else {
         wxMessageBox("Profile data saved successfully!", "Success", wxICON_INFORMATION);
     }
+    std::cout << sql << std::endl;
 }
 
 void MyFrame::OnPassText(wxCommandEvent& event) {
     wxString value = lineForPass->GetValue();
-    bool hasUpperCase = false;  
-    filteredValuePass.clear();    
-    
+    bool hasUpperCase = false;
+    filteredValuePass.clear();
+
     for (wxChar ch : value) {
         if (filteredValuePass.length() < 20) {
             if (ch == ' ') {
@@ -336,11 +362,11 @@ void MyFrame::OnPassText(wxCommandEvent& event) {
             }
 
             if (wxIsupper(ch)) {
-                hasUpperCase = true; 
+                hasUpperCase = true;
             }
 
             if (wxIsdigit(ch) || wxIsalpha(ch)) {
-                filteredValuePass += ch; 
+                filteredValuePass += ch;
             }
         } else {
             wxMessageBox("Password must be less than 20 characters", "Error", wxICON_ERROR);
