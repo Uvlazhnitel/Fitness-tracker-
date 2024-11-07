@@ -242,7 +242,6 @@ void MyFrame::InitializeDatabase() {
         sqlite3_finalize(stmt);
     }
 
-    // Добавляем поле Password, если оно отсутствует
     if (!hasPasswordColumn) {
         const char* addColumnSql = "ALTER TABLE Users ADD COLUMN Password TEXT;";
         exit = sqlite3_exec(db, addColumnSql, NULL, 0, &errorMessage);
@@ -312,24 +311,16 @@ void MyFrame::OnWeightText(wxCommandEvent& event) {
             break;
         }
     }
-
-    // if(filteredValueWeight.length() > 3) {
-    //     wxMessageBox("Weight must be less than 1000", "Error", wxICON_ERROR);
-    //     lineForWeight->SetValue(filteredValueWeight);
-    //     lineForWeight->SetInsertionPointEnd();
-    // }
 }
 
 // Event handler for save button
 void MyFrame::OnSaveButtonClick(wxCommandEvent& event) {
-    pressed = true;
     wxString name = lineForName->GetValue();
     wxString gender = radioMale->GetValue() ? "Male" : "Female";
     wxString dateOfBirthStr = dateOfBirth->GetValue().FormatISODate();
     wxString weight = lineForWeight->GetValue();
-    wxString pass = lineForPass->GetValue();  // Получаем значение пароля
+    wxString pass = lineForPass->GetValue();
 
-    // Формируем SQL-запрос с добавлением пароля
     string sql = "INSERT INTO Users (Name, Gender, DateOfBirth, Weight, Password) VALUES ('" +
                  string(name.mb_str()) + "', '" +
                  string(gender.mb_str()) + "', '" +
@@ -338,6 +329,21 @@ void MyFrame::OnSaveButtonClick(wxCommandEvent& event) {
                  string(pass.mb_str()) + "');";
 
     char* errorMessage;
+    
+    if(name.IsEmpty()) {
+        wxMessageBox("Name field is empty", "Error", wxICON_ERROR);
+        return;
+    } else if(weight.IsEmpty()) {
+        wxMessageBox("Weight field is empty", "Error", wxICON_ERROR);
+        return;
+    } else if(pass.IsEmpty()) {
+        wxMessageBox("Password field is empty", "Error", wxICON_ERROR);
+        return;
+    } else if(!radioMale->GetValue() && !radioFemale->GetValue()) {
+        wxMessageBox("Gender field is empty", "Error", wxICON_ERROR);
+        return;
+    }
+
     int exit = sqlite3_exec(db, sql.c_str(), NULL, 0, &errorMessage);
     if (exit != SQLITE_OK) {
         wxMessageBox("Failed to save profile data", "Error", wxICON_ERROR);
@@ -345,7 +351,7 @@ void MyFrame::OnSaveButtonClick(wxCommandEvent& event) {
     } else {
         wxMessageBox("Profile data saved successfully!", "Success", wxICON_INFORMATION);
     }
-    std::cout << sql << std::endl;
+
 }
 
 void MyFrame::OnPassText(wxCommandEvent& event) {
@@ -374,6 +380,8 @@ void MyFrame::OnPassText(wxCommandEvent& event) {
             lineForPass->SetInsertionPointEnd();
             return;
         }
+
+
     }
 }
 
