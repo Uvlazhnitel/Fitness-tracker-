@@ -1,12 +1,10 @@
 #include <wx/wx.h>
 #include <wx/datectrl.h>
 #include <wx/dateevt.h>
-#include <cctype>
-#include <sqlite3.h> 
-#include <fstream>
+#include <sqlite3.h>
 #include <wx/radiobut.h>
-
 #include <iostream>
+#include <string>
 using namespace std;
 
 // Application class
@@ -28,6 +26,13 @@ public:
     void OnWeightText(wxCommandEvent& event);
     void OnPassText(wxCommandEvent& event);
     void OnSaveButtonClick(wxCommandEvent& event);
+
+private:
+    void SetupUI();
+    void SetupProfilePanel();
+    void SetupNutritionPanel();
+    void SetupMainMenuButtons();
+    void BindEvents();
 
     // UI components
     wxPanel* training;

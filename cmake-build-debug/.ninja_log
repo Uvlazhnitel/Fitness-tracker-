@@ -1,0 +1,4 @@
+# ninja log v6
+1	321	1730969590340715368	build.ninja	a4a99fd82db0383a
+0	963	1730969496810740668	CMakeFiles/fitness_tracker.dir/main.cpp.o	247c75b6c22fa5ab
+965	1074	1730969497775425179	fitness_tracker	87fa4ea4b67b5e1a
