@@ -34,6 +34,7 @@ public:
     wxPanel* nutrition;
     wxPanel* profile;
     wxPanel* mainPage;
+    wxPanel* profileSetUp;
     wxBoxSizer* mainSizer;
     wxBoxSizer* buttonSizer;
     wxBoxSizer* nutritionSizer;
@@ -56,7 +57,7 @@ public:
     wxString filteredValueWeight;
     wxString filteredValuePass;
     wxBoxSizer* radioSizer;
-    bool pressed = false;
+    bool profileSaved = false;
 
     wxButton* button1;
     wxButton* button2;
@@ -99,11 +100,14 @@ MyFrame::MyFrame(const wxString& title)
     nutrition = new wxPanel(this, wxID_ANY);
     profile = new wxPanel(this, wxID_ANY);
     mainPage = new wxPanel(this, wxID_ANY);
+    profileSetUp = new wxPanel(this, wxID_ANY);
+
 
     // Setting up content for each panel
     training->SetBackgroundColour(*wxBLUE);
     nutrition->SetBackgroundColour(*wxGREEN);
     profile->SetBackgroundColour(wxColour(230, 230, 250));
+    profileSetUp->SetBackgroundColour(*wxRED);
     mainPage->SetBackgroundColour(*wxWHITE);
 
     // Adding elements to the nutrition panel
@@ -191,6 +195,7 @@ MyFrame::MyFrame(const wxString& title)
     training->Hide();
     nutrition->Hide();
     profile->Hide();
+    profileSetUp->Hide();
 
     // Add buttons and panels to the main sizer
     mainSizer = new wxBoxSizer(wxVERTICAL);
@@ -200,6 +205,7 @@ MyFrame::MyFrame(const wxString& title)
     mainSizer->Add(training, 1, wxEXPAND);
     mainSizer->Add(nutrition, 1, wxEXPAND);
     mainSizer->Add(profile, 1, wxEXPAND);
+    mainSizer->Add(profileSetUp, 1, wxEXPAND);
 
     SetSizer(mainSizer);
 }
@@ -220,7 +226,7 @@ void MyFrame::InitializeDatabase() {
                       "Name TEXT NOT NULL, "
                       "Gender TEXT NOT NULL, "
                       "DateOfBirth TEXT NOT NULL, "
-                      "Weight TEXT NOT NULL);";  // Без Password
+                      "Weight TEXT NOT NULL);";
     exit = sqlite3_exec(db, sql, NULL, 0, &errorMessage);
     if (exit != SQLITE_OK) {
         wxMessageBox(wxString::Format("Failed to create table: %s", errorMessage), "Error", wxICON_ERROR);
@@ -258,6 +264,7 @@ void MyFrame::OnButton1Click(wxCommandEvent& event) {
     training->Show();
     nutrition->Hide();
     profile->Hide();
+    profileSetUp->Hide();
     mainSizer->Layout();
 }
 
@@ -267,16 +274,26 @@ void MyFrame::OnButton2Click(wxCommandEvent& event) {
     training->Hide();
     nutrition->Show();
     profile->Hide();
+    profileSetUp->Hide();
     mainSizer->Layout();
 }
 
 // Event handler for Profile button
 void MyFrame::OnButton3Click(wxCommandEvent& event) {
-    mainPage->Hide();
-    training->Hide();
-    nutrition->Hide();
-    profile->Show();
-    mainSizer->Layout();
+    if(profileSaved == true) {
+        profileSetUp->Show();
+        profile->Hide();
+    } else {
+        mainPage->Hide();
+        training->Hide();
+        nutrition->Hide();
+        profile->Show();
+        profileSetUp->Hide();
+        mainSizer->Layout();
+    }
+
+
+
 }
 
 // Event handler for name text field
@@ -329,7 +346,7 @@ void MyFrame::OnSaveButtonClick(wxCommandEvent& event) {
                  string(pass.mb_str()) + "');";
 
     char* errorMessage;
-    
+
     if(name.IsEmpty()) {
         wxMessageBox("Name field is empty", "Error", wxICON_ERROR);
         return;
@@ -350,11 +367,15 @@ void MyFrame::OnSaveButtonClick(wxCommandEvent& event) {
         sqlite3_free(errorMessage);
     } else {
         wxMessageBox("Profile data saved successfully!", "Success", wxICON_INFORMATION);
-    }
+        profile->Hide();
+        profileSetUp->Show();
+        mainSizer->Layout();
+        profileSaved = true;
 
+    }
 }
 
-void MyFrame::OnPassText(wxCommandEvent& event) {
+void MyFrame::OnPassText(wxCommandEvent& eventB) {
     wxString value = lineForPass->GetValue();
     bool hasUpperCase = false;
     filteredValuePass.clear();
