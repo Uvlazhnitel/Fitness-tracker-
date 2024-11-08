@@ -126,6 +126,24 @@ MyFrame::MyFrame(const wxString& title)
     textOnWeight = new wxStaticText(profile, wxID_ANY, "Enter your weight (kg):");
     textOnPass = new wxStaticText(profile, wxID_ANY, "Enter your password:");
 
+
+    wxStaticText* textOnNameSetUp = new wxStaticText(profileSetUp, wxID_ANY, "Enter your name:");
+    wxStaticText* textOnPassSetUp = new wxStaticText(profileSetUp, wxID_ANY, "Enter your password:");
+    wxTextCtrl* lineForNameSetUp = new wxTextCtrl(profileSetUp, wxID_ANY, "", wxDefaultPosition, wxSize(150, 30));
+    wxTextCtrl* lineForPassSetUp = new wxTextCtrl(profileSetUp, wxID_ANY, "", wxDefaultPosition, wxSize(150, 30));
+    wxButton* buttonLogIn = new wxButton(profileSetUp, wxID_ANY, "Log in");
+
+     wxBoxSizer* profileSetUpSizer = new wxBoxSizer(wxVERTICAL);
+    profileSetUpSizer->Add(textOnNameSetUp, 0, wxALIGN_CENTER | wxTOP | wxLEFT | wxRIGHT, 10);
+    profileSetUpSizer->Add(lineForNameSetUp, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT | wxBOTTOM, 10);
+    profileSetUpSizer->Add(textOnPassSetUp, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, 10);
+    profileSetUpSizer->Add(lineForPassSetUp, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT | wxBOTTOM, 10);
+    profileSetUpSizer->Add(buttonLogIn, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT | wxTOP, 20);
+    profileSetUpSizer->AddStretchSpacer(1);
+    profileSetUp->SetSizer(profileSetUpSizer);
+
+
+
     // Radio buttons with labels using wxStaticText for custom color
     radioMale = new wxRadioButton(profile, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxRB_GROUP);
     wxStaticText* labelMale = new wxStaticText(profile, wxID_ANY, "Male");
