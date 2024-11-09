@@ -28,40 +28,21 @@ public:
     void OnWeightText(wxCommandEvent& event);
     void OnPassText(wxCommandEvent& event);
     void OnSaveButtonClick(wxCommandEvent& event);
+    void OnLogInButtonClickSetUp(wxCommandEvent& event);
 
     // UI components
-    wxPanel* training;
-    wxPanel* nutrition;
-    wxPanel* profile;
-    wxPanel* mainPage;
-    wxPanel* profileSetUp;
-    wxBoxSizer* mainSizer;
-    wxBoxSizer* buttonSizer;
-    wxBoxSizer* nutritionSizer;
-    wxBoxSizer* profileSizer;
-    wxStaticText* textOnProfile;
-    wxStaticText* textOnNutrition;
+    wxPanel *training, *nutrition, *profile, *mainPage, *profileSetUp,*profileMain ;
+    wxBoxSizer *mainSizer, *buttonSizer, *nutritionSizer, *profileSizer, *radioSizer;
+    wxStaticText *textOnProfile, *textOnNutrition, *textOnName, *textOnGender, *textOnDate, *textOnWeight, *textOnPass;
     wxDatePickerCtrl* dateOfBirth;
-    wxRadioButton* radioMale;
-    wxRadioButton* radioFemale;
-    wxTextCtrl* lineForName;
-    wxTextCtrl* lineForWeight;
-    wxTextCtrl* lineForPass;
-    wxStaticText* textOnName;
-    wxStaticText* textOnGender;
-    wxStaticText* textOnDate;
-    wxStaticText* textOnWeight;
-    wxStaticText* textOnPass;
-    wxButton* buttonSave;
-    wxString filteredValueName;
-    wxString filteredValueWeight;
-    wxString filteredValuePass;
-    wxBoxSizer* radioSizer;
-    bool profileSaved = false;
+    wxRadioButton *radioMale, *radioFemale;
+    wxTextCtrl *lineForName, *lineForWeight, *lineForPass;
+    wxButton *buttonSave, *button1, *button2, *button3;
+    wxString filteredValueName, filteredValueWeight, filteredValuePass;
 
-    wxButton* button1;
-    wxButton* button2;
-    wxButton* button3;
+    bool profileSaved = false;
+    bool logIn = false;
+
     sqlite3* db;
 };
 
@@ -101,13 +82,14 @@ MyFrame::MyFrame(const wxString& title)
     profile = new wxPanel(this, wxID_ANY);
     mainPage = new wxPanel(this, wxID_ANY);
     profileSetUp = new wxPanel(this, wxID_ANY);
-
+    profileMain = new wxPanel(this, wxID_ANY);
 
     // Setting up content for each panel
     training->SetBackgroundColour(*wxBLUE);
     nutrition->SetBackgroundColour(*wxGREEN);
     profile->SetBackgroundColour(wxColour(230, 230, 250));
     profileSetUp->SetBackgroundColour(*wxRED);
+    profileMain->SetBackgroundColour(*wxYELLOW);
     mainPage->SetBackgroundColour(*wxWHITE);
 
     // Adding elements to the nutrition panel
@@ -126,14 +108,14 @@ MyFrame::MyFrame(const wxString& title)
     textOnWeight = new wxStaticText(profile, wxID_ANY, "Enter your weight (kg):");
     textOnPass = new wxStaticText(profile, wxID_ANY, "Enter your password:");
 
-
     wxStaticText* textOnNameSetUp = new wxStaticText(profileSetUp, wxID_ANY, "Enter your name:");
     wxStaticText* textOnPassSetUp = new wxStaticText(profileSetUp, wxID_ANY, "Enter your password:");
     wxTextCtrl* lineForNameSetUp = new wxTextCtrl(profileSetUp, wxID_ANY, "", wxDefaultPosition, wxSize(150, 30));
     wxTextCtrl* lineForPassSetUp = new wxTextCtrl(profileSetUp, wxID_ANY, "", wxDefaultPosition, wxSize(150, 30));
     wxButton* buttonLogIn = new wxButton(profileSetUp, wxID_ANY, "Log in");
+    buttonLogIn->Bind(wxEVT_BUTTON, &MyFrame::OnLogInButtonClickSetUp, this);
 
-     wxBoxSizer* profileSetUpSizer = new wxBoxSizer(wxVERTICAL);
+    wxBoxSizer* profileSetUpSizer = new wxBoxSizer(wxVERTICAL);
     profileSetUpSizer->Add(textOnNameSetUp, 0, wxALIGN_CENTER | wxTOP | wxLEFT | wxRIGHT, 10);
     profileSetUpSizer->Add(lineForNameSetUp, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT | wxBOTTOM, 10);
     profileSetUpSizer->Add(textOnPassSetUp, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, 10);
@@ -142,7 +124,10 @@ MyFrame::MyFrame(const wxString& title)
     profileSetUpSizer->AddStretchSpacer(1);
     profileSetUp->SetSizer(profileSetUpSizer);
 
-
+    wxBoxSizer* profileMainSizer = new wxBoxSizer(wxVERTICAL);
+    wxStaticText* textOnProfileMain = new wxStaticText(profileMain, wxID_ANY, "Profile data");
+    profileMainSizer->Add(textOnProfileMain, 0, wxALIGN_CENTER | wxTOP | wxLEFT | wxRIGHT, 10);
+    profileMain->SetSizer(profileMainSizer);
 
     // Radio buttons with labels using wxStaticText for custom color
     radioMale = new wxRadioButton(profile, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxRB_GROUP);
@@ -160,7 +145,6 @@ MyFrame::MyFrame(const wxString& title)
     lineForName = new wxTextCtrl(profile, wxID_ANY, "", wxDefaultPosition, wxSize(150, 30));
     lineForWeight = new wxTextCtrl(profile, wxID_ANY, "", wxDefaultPosition, wxSize(150, 30));
     lineForPass = new wxTextCtrl(profile, wxID_ANY, "", wxDefaultPosition, wxSize(150, 30));
-
     buttonSave = new wxButton(profile, wxID_ANY, "Save");
 
     // Setting colors for texts and controls
@@ -213,6 +197,7 @@ MyFrame::MyFrame(const wxString& title)
     training->Hide();
     nutrition->Hide();
     profile->Hide();
+    profileMain->Hide();
     profileSetUp->Hide();
 
     // Add buttons and panels to the main sizer
@@ -223,6 +208,7 @@ MyFrame::MyFrame(const wxString& title)
     mainSizer->Add(training, 1, wxEXPAND);
     mainSizer->Add(nutrition, 1, wxEXPAND);
     mainSizer->Add(profile, 1, wxEXPAND);
+    mainSizer->Add(profileMain, 1, wxEXPAND);
     mainSizer->Add(profileSetUp, 1, wxEXPAND);
 
     SetSizer(mainSizer);
@@ -238,7 +224,6 @@ void MyFrame::InitializeDatabase() {
 
     char* errorMessage;
 
-    // Создаем таблицу Users, если она не существует
     const char* sql = "CREATE TABLE IF NOT EXISTS Users ("
                       "ID INTEGER PRIMARY KEY AUTOINCREMENT, "
                       "Name TEXT NOT NULL, "
@@ -264,15 +249,6 @@ void MyFrame::InitializeDatabase() {
             }
         }
         sqlite3_finalize(stmt);
-    }
-
-    if (!hasPasswordColumn) {
-        const char* addColumnSql = "ALTER TABLE Users ADD COLUMN Password TEXT;";
-        exit = sqlite3_exec(db, addColumnSql, NULL, 0, &errorMessage);
-        if (exit != SQLITE_OK) {
-            wxMessageBox(wxString::Format("Failed to add Password column: %s", errorMessage), "Error", wxICON_ERROR);
-            sqlite3_free(errorMessage);
-        }
     }
 }
 
@@ -301,7 +277,16 @@ void MyFrame::OnButton3Click(wxCommandEvent& event) {
     if(profileSaved == true) {
         profileSetUp->Show();
         profile->Hide();
-    } else {
+    } else if(logIn == true and profileSaved == false) {
+        mainPage->Hide();
+        training->Hide();
+        nutrition->Hide();
+        profile->Hide();
+        profileMain->Show();
+        profileSetUp->Hide();
+        mainSizer->Layout();
+    }
+    else{
         mainPage->Hide();
         training->Hide();
         nutrition->Hide();
@@ -309,8 +294,6 @@ void MyFrame::OnButton3Click(wxCommandEvent& event) {
         profileSetUp->Hide();
         mainSizer->Layout();
     }
-
-
 
 }
 
@@ -322,8 +305,8 @@ void MyFrame::OnNameText(wxCommandEvent& event) {
         if (wxIsalpha(ch) || ch == ' ') {
             filteredValueName += ch;
         } else {
-            wxMessageBox("Only letters are allowed in the name field", "Error", wxICON_ERROR);
             lineForName->SetValue(filteredValueName);
+            lineForName->SetInsertionPointEnd();
             break;
         }
     }
@@ -341,8 +324,8 @@ void MyFrame::OnWeightText(wxCommandEvent& event) {
             lineForWeight->SetInsertionPointEnd();
             return;
         } else {
-            wxMessageBox("Only integers are allowed in the weight field", "Error", wxICON_ERROR);
             lineForWeight->SetValue(filteredValueWeight);
+            lineForWeight->SetInsertionPointEnd();
             break;
         }
     }
@@ -419,9 +402,37 @@ void MyFrame::OnPassText(wxCommandEvent& eventB) {
             lineForPass->SetInsertionPointEnd();
             return;
         }
-
-
     }
+}
+
+void MyFrame::OnLogInButtonClickSetUp(wxCommandEvent& event) {
+    wxString name = lineForName->GetValue();
+    wxString pass = lineForPass->GetValue();
+
+    string sql = "SELECT * FROM Users WHERE Name = '" + string(name.mb_str()) + "' AND Password = '" + string(pass.mb_str()) + "';";
+
+    sqlite3_stmt* stmt;
+    int exit = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
+    if (exit != SQLITE_OK) {
+        wxMessageBox("Failed to check user data", "Error", wxICON_ERROR);
+        return;
+    }
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        wxMessageBox("User data found", "Success", wxICON_INFORMATION);
+        mainPage->Hide();
+        training->Hide();
+        nutrition->Hide();
+        profile->Hide();
+        profileMain->Show();
+        profileSetUp->Hide();
+        mainSizer->Layout();
+        logIn = true;
+        profileSaved = false;
+
+    } else {
+        wxMessageBox("User data not found", "Error", wxICON_ERROR);
+        }
 }
 
 // Destructor to close the database
