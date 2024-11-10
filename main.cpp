@@ -82,6 +82,7 @@ MyFrame::MyFrame(const wxString& title)
     nutrition = new wxPanel(this, wxID_ANY);
     profile = new wxPanel(this, wxID_ANY);
     mainPage = new wxPanel(this, wxID_ANY);
+    profileSetUp = new wxPanel(this, wxID_ANY);
     profileMain = new wxPanel(this, wxID_ANY);
 
     // Setting up content for each panel
