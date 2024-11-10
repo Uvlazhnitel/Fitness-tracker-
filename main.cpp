@@ -39,7 +39,7 @@ public:
     wxDatePickerCtrl *dateOfBirth;
     wxRadioButton *radioMale, *radioFemale;
     wxTextCtrl *lineForPassLogin, *lineForNameLogin, *lineForName, *lineForWeight, *lineForPass, *lineForNameSetUp, *lineForPassSetUp;
-    wxButton *buttonSave, *button1, *button2, *button3, *buttonLogIn;
+    wxButton *buttonSave, *button1, *button2, *button3, *buttonLogIn, *buttonLogOff;
     wxString filteredValueName, filteredValueWeight, filteredValuePass;
     wxFont boldFont;
     bool profileSaved = false;
@@ -82,7 +82,6 @@ MyFrame::MyFrame(const wxString& title)
     nutrition = new wxPanel(this, wxID_ANY);
     profile = new wxPanel(this, wxID_ANY);
     mainPage = new wxPanel(this, wxID_ANY);
-    profileSetUp = new wxPanel(this, wxID_ANY);
     profileMain = new wxPanel(this, wxID_ANY);
 
     // Setting up content for each panel
@@ -134,11 +133,13 @@ MyFrame::MyFrame(const wxString& title)
     profileGender = new wxStaticText(profileMain, wxID_ANY, "Gender: ");
     profileDateOfBirth = new wxStaticText(profileMain, wxID_ANY, "Date of Birth: ");
     profileWeight = new wxStaticText(profileMain, wxID_ANY, "Weight: ");
+    buttonLogOff = new wxButton(profileMain, wxID_ANY, "Log off");
 
     profileMainSizer->Add(profileName, 0, wxALIGN_LEFT | wxALL, 10);
     profileMainSizer->Add(profileGender, 0, wxALIGN_LEFT | wxALL, 10);
     profileMainSizer->Add(profileDateOfBirth, 0, wxALIGN_LEFT | wxALL, 10);
     profileMainSizer->Add(profileWeight, 0, wxALIGN_LEFT | wxALL, 10);
+    profileMainSizer->Add(buttonLogOff, 0, wxALIGN_LEFT | wxALL, 10);
     profileMain->SetSizer(profileMainSizer);
 
     // Radio buttons with labels using wxStaticText for custom color
