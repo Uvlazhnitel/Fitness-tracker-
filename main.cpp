@@ -61,8 +61,11 @@ MyFrame::MyFrame(const wxString& title)
 
     InitializeDatabase();
     buttonSizer = new wxBoxSizer(wxHORIZONTAL);
-    wxColour textColor(60, 60, 60);
-    wxColour textCtrlColor(255, 229, 180);
+    // Цвет текста
+    wxColour textColor(50, 50, 50);
+    wxColour textCtrlColor(250, 245, 235);
+    wxColour buttonColor(70, 90, 120);
+    wxColour backgroundColor(235, 240, 245);
 
     // Main menu buttons
     button1 = new wxButton(this, wxID_ANY, "Training");
@@ -86,11 +89,11 @@ MyFrame::MyFrame(const wxString& title)
     profileMain = new wxPanel(this, wxID_ANY);
 
     // Setting up content for each panel
-    training->SetBackgroundColour(*wxBLUE);
-    nutrition->SetBackgroundColour(*wxGREEN);
-    profile->SetBackgroundColour(wxColour(230, 230, 250));
-    profileMain->SetBackgroundColour(wxColour(234, 140, 0));
-    mainPage->SetBackgroundColour(*wxWHITE);
+    training->SetBackgroundColour(backgroundColor);
+    nutrition->SetBackgroundColour(backgroundColor);
+    profile->SetBackgroundColour(backgroundColor);
+    profileMain->SetBackgroundColour(backgroundColor);
+    mainPage->SetBackgroundColour(backgroundColor);
 
     // Adding elements to the nutrition panel
     nutritionSizer = new wxBoxSizer(wxVERTICAL);
@@ -121,6 +124,11 @@ MyFrame::MyFrame(const wxString& title)
     buttonLogOff->Bind(wxEVT_BUTTON, &MyFrame::OnLogOffButtonClick, this);
     buttonLogOff->SetOwnBackgroundColour(wxColour(60, 60, 60));
 
+    profileName->SetForegroundColour(textColor);
+    profileGender->SetForegroundColour(textColor);
+    profileDateOfBirth->SetForegroundColour(textColor);
+    profileWeight->SetForegroundColour(textColor);
+    
     profileMainSizer->Add(profileName, 0, wxALIGN_LEFT | wxALL, 10);
     profileMainSizer->Add(profileGender, 0, wxALIGN_LEFT | wxALL, 10);
     profileMainSizer->Add(profileDateOfBirth, 0, wxALIGN_LEFT | wxALL, 10);
@@ -158,7 +166,7 @@ MyFrame::MyFrame(const wxString& title)
     lineForName->SetForegroundColour(textColor);
     lineForWeight->SetForegroundColour(textColor);
     lineForPass->SetForegroundColour(textColor);
-    buttonSave->SetOwnBackgroundColour(wxColour(60, 60, 60));
+    buttonSave->SetOwnBackgroundColour(buttonColor);
 
     lineForName->SetBackgroundColour(textCtrlColor);
     lineForWeight->SetBackgroundColour(textCtrlColor);
@@ -193,7 +201,8 @@ MyFrame::MyFrame(const wxString& title)
     lineForNameLogin = new wxTextCtrl(profile, wxID_ANY, "", wxDefaultPosition, wxSize(150, 30));
     lineForPassLogin = new wxTextCtrl(profile, wxID_ANY, "", wxDefaultPosition, wxSize(150, 30));
     wxButton* buttonOrLogIn= new wxButton(profile, wxID_ANY, "Log in");
-    buttonOrLogIn1->SetBackgroundColour(wxColour(60, 60, 60)); // Серый цвет для фона
+
+    buttonOrLogIn->SetBackgroundColour(buttonColor);
     buttonOrLogIn->Bind(wxEVT_BUTTON, &MyFrame::OnLogInButtonClickSetUp, this);
 
     textOrLogin->SetForegroundColour(textColor);
