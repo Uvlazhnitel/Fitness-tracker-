@@ -31,26 +31,29 @@ public:
     void OnLogInButtonClickSetUp(wxCommandEvent& event);
     void DisplayUserData(const wxString& name);
     void OnLogOffButtonClick(wxCommandEvent& event);
+    void OnAddButtonClick(wxCommandEvent& event);
 
     // UI components
     wxPanel *training, *nutrition, *profile, *mainPage, *profileMain;
-    wxBoxSizer *mainSizer, *buttonSizer, *nutritionSizer, *profileSizer, *radioSizer, *profileMainSizer;
+    wxBoxSizer *trainingSizer,*mainSizer, *buttonSizer, *nutritionSizer, *profileSizer, *radioSizer, *profileMainSizer;
     wxStaticText *textOnNameLogin, *textOnPassLogin, *textOrLogin, *textOnProfile, *textOnNutrition, *textOnName, *textOnGender, *textOnDate, *textOnWeight, *textOnPass;
     wxStaticText *profileName, *profileGender, *profileDateOfBirth, *profileWeight;
     wxDatePickerCtrl *dateOfBirth;
     wxRadioButton *radioMale, *radioFemale;
     wxTextCtrl *lineForPassLogin, *lineForNameLogin, *lineForName, *lineForWeight, *lineForPass;
-    wxButton *buttonSave, *button1, *button2, *button3, *buttonLogIn, *buttonLogOff;
+    wxButton *addButtonWeek, *addButton, *buttonSave, *button1, *button2, *button3, *buttonLogIn, *buttonLogOff;
     wxString filteredValueName, filteredValueWeight, filteredValuePass;
     wxFont boldFont;
     bool profileSaved = false;
     bool logIn = false;
+    bool hasUpperCase = false;
+
     sqlite3* db;
 };
 
 // Application initialization
 bool MyApp::OnInit() {
-    MyFrame* frame = new MyFrame("Application on wxWidgets");
+    MyFrame* frame = new MyFrame("Fitness App");
     frame->Show(true);
     return true;
 }
@@ -89,8 +92,8 @@ MyFrame::MyFrame(const wxString& title)
     profileMain = new wxPanel(this, wxID_ANY);
 
     // Setting up content for each panel
-    training->SetBackgroundColour(backgroundColor);
-    nutrition->SetBackgroundColour(backgroundColor);
+    training->SetBackgroundColour(*wxRED);
+    nutrition->SetBackgroundColour(*wxRED);
     profile->SetBackgroundColour(backgroundColor);
     profileMain->SetBackgroundColour(backgroundColor);
     mainPage->SetBackgroundColour(backgroundColor);
@@ -100,6 +103,12 @@ MyFrame::MyFrame(const wxString& title)
     textOnNutrition = new wxStaticText(nutrition, wxID_ANY, "Text on panel 2");
     nutritionSizer->Add(textOnNutrition, 1, wxALIGN_CENTER | wxALL, 10);
     nutrition->SetSizer(nutritionSizer);
+
+    trainingSizer = new wxBoxSizer(wxVERTICAL);
+    addButton = new wxButton(training, wxID_ANY, "Add");
+    addButton->Bind(wxEVT_BUTTON, &MyFrame::OnAddButtonClick, this);
+    trainingSizer->Add(addButton, 0, wxALIGN_CENTER | wxALL, 10);
+    training->SetSizer(trainingSizer);
 
     // Adding elements to the profile panel
     profileSizer = new wxBoxSizer(wxVERTICAL);
@@ -128,7 +137,7 @@ MyFrame::MyFrame(const wxString& title)
     profileGender->SetForegroundColour(textColor);
     profileDateOfBirth->SetForegroundColour(textColor);
     profileWeight->SetForegroundColour(textColor);
-    
+
     profileMainSizer->Add(profileName, 0, wxALIGN_LEFT | wxALL, 10);
     profileMainSizer->Add(profileGender, 0, wxALIGN_LEFT | wxALL, 10);
     profileMainSizer->Add(profileDateOfBirth, 0, wxALIGN_LEFT | wxALL, 10);
@@ -404,6 +413,9 @@ void MyFrame::OnSaveButtonClick(wxCommandEvent& event) {
     } else if(!radioMale->GetValue() && !radioFemale->GetValue()) {
         wxMessageBox("Gender field is empty", "Error", wxICON_ERROR);
         return;
+    } else if(!hasUpperCase) {
+        wxMessageBox("Password must contain at least one uppercase letter", "Error", wxICON_ERROR);
+        return;
     }
 
     int exit = sqlite3_exec(db, sql.c_str(), NULL, 0, &errorMessage);
@@ -420,7 +432,6 @@ void MyFrame::OnSaveButtonClick(wxCommandEvent& event) {
 
 void MyFrame::OnPassText(wxCommandEvent& eventB) {
     wxString value = lineForPass->GetValue();
-    bool hasUpperCase = false;
     filteredValuePass.clear();
 
     for (wxChar ch : value) {
@@ -462,7 +473,6 @@ void MyFrame::OnLogInButtonClickSetUp(wxCommandEvent& event) {
     }
 
     if (sqlite3_step(stmt) == SQLITE_ROW) {
-        wxMessageBox("User data found", "Success", wxICON_INFORMATION);
         mainPage->Hide();
         training->Hide();
         nutrition->Hide();
@@ -489,6 +499,22 @@ void MyFrame::OnLogOffButtonClick(wxCommandEvent& event) {
     logIn = false;
 }
 
+void MyFrame::OnAddButtonClick(wxCommandEvent& event) {
+    wxBoxSizer* rowSizer = new wxBoxSizer(wxHORIZONTAL);
+
+    int itemCount = trainingSizer->GetItemCount();
+
+    wxButton* newButton = new wxButton(training, wxID_ANY, wxString::Format("Button %i", itemCount));
+    wxStaticText* buttonText = new wxStaticText(training, wxID_ANY, wxString::Format("Text %i", itemCount));
+    addButtonWeek = new wxButton(training, wxID_ANY, "Add");
+    addButtonWeek->Bind(wxEVT_BUTTON, &MyFrame::OnAddButtonClick, this);
+    rowSizer->Add(newButton, 0, wxALL, 5);
+    rowSizer->Add(buttonText, 0, wxALL, 5);
+    rowSizer->Add(addButtonWeek, 0, wxALL, 5);
+
+    trainingSizer->Add(rowSizer, 0, wxEXPAND | wxALL, 5);
+
+    training->Layout();
 // Destructor to close the database
 MyFrame::~MyFrame() {
     sqlite3_close(db);
