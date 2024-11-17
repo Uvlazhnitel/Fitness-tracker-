@@ -52,8 +52,12 @@ public:
     bool logIn = false;
     bool hasUpperCase = false;
 
-    int buttonClickCounter = 1;    
+    int buttonClickCounter = 1;  
 
+    wxColour textColor = wxColour(50, 50, 50);
+    wxColour textCtrlColor = wxColour(250, 245, 235);
+    wxColour buttonColor = wxColour(70, 90, 120);
+    wxColour backgroundColor = wxColour(235, 240, 245);    
 
     sqlite3* db;
 };
@@ -70,12 +74,10 @@ MyFrame::MyFrame(const wxString& title)
        : wxFrame(NULL, wxID_ANY, title, wxDefaultPosition, wxSize(800, 600)) {
 
     InitializeDatabase();
+
     buttonSizer = new wxBoxSizer(wxHORIZONTAL);
     // Цвет текста
-    wxColour textColor(50, 50, 50);
-    wxColour textCtrlColor(250, 245, 235);
-    wxColour buttonColor(70, 90, 120);
-    wxColour backgroundColor(235, 240, 245);
+
 
     // Main menu buttons
     button1 = new wxButton(this, wxID_ANY, "Training");
@@ -102,7 +104,7 @@ MyFrame::MyFrame(const wxString& title)
 
 
     // Setting up content for each panel
-    training->SetBackgroundColour(*wxRED);
+    training->SetBackgroundColour(backgroundColor);
     nutrition->SetBackgroundColour(*wxRED);
     profile->SetBackgroundColour(backgroundColor);
     profileMain->SetBackgroundColour(backgroundColor);
@@ -247,6 +249,7 @@ MyFrame::MyFrame(const wxString& title)
 
     //create button and bind onAddTrainingDay
     addButtonWeek = new wxButton(training, wxID_ANY, "Add training day");
+    addButtonWeek->SetOwnBackgroundColour(buttonColor);
     addButtonWeek->Bind(wxEVT_BUTTON, &MyFrame::OnAddTrainingDay, this);
     trainingSizer->Add(addButtonWeek, 0, wxALIGN_CENTER | wxALL, 10);
 
@@ -514,12 +517,19 @@ void MyFrame::OnLogOffButtonClick(wxCommandEvent& event) {
 
 // Event handler for adding a training day.
 void MyFrame::OnAddTrainingDay(wxCommandEvent& event) {
-
     // Create a wxListCtrl to display exercises, sets, and reps
-    wxListCtrl* listCtrl = new wxListCtrl(training, wxID_ANY, wxDefaultPosition, wxSize(350, 200), wxLC_REPORT | wxLC_SINGLE_SEL);
+    wxListCtrl* listCtrl = new wxListCtrl(training, wxID_ANY, wxDefaultPosition, wxSize(350, 200), wxLC_REPORT | wxLC_SINGLE_SEL | wxBORDER_SIMPLE);
 
+    
     wxStaticText* dayNumber = new wxStaticText(training, wxID_ANY, "Day " + wxString::Format("%d", buttonClickCounter), wxDefaultPosition);
 
+    dayNumber->SetForegroundColour(textColor);
+
+    // Set the background and text color for the list control
+    wxColour listBackgroundColor(this->textCtrlColor); // Use this-> to refer to the field
+    wxColour listTextColor(this->textColor);             // Use this-> to refer to the field
+    listCtrl->SetBackgroundColour(listBackgroundColor);
+    listCtrl->SetForegroundColour(listTextColor);
 
     // Initialize the list control with columns for "Exercise", "Sets", and "Reps"
     listCtrl->InsertColumn(0, "Exercise", wxLIST_FORMAT_LEFT, 150);
