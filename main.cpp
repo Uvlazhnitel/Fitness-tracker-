@@ -36,7 +36,7 @@ public:
     void OnAddTrainingDay(wxCommandEvent& event);
 
     // UI components
-    wxPanel *training, *nutrition, *profile, *mainPage, *profileMain;
+    wxPanel *nutrition, *profile, *mainPage, *profileMain;
     wxBoxSizer *trainingSizer,*mainSizer, *buttonSizer, *nutritionSizer, *profileSizer, *radioSizer, *profileMainSizer;
     wxStaticText *textOnNameLogin, *textOnPassLogin, *textOrLogin, *textOnProfile, *textOnNutrition, *textOnName, *textOnGender, *textOnDate, *textOnWeight, *textOnPass;
     wxStaticText *profileName, *profileGender, *profileDateOfBirth, *profileWeight;
@@ -46,6 +46,8 @@ public:
     wxButton *addButtonWeek, *addButton, *buttonSave, *button1, *button2, *button3, *buttonLogIn, *buttonLogOff;
     wxString filteredValueName, filteredValueWeight, filteredValuePass;
     wxFont boldFont;
+
+    wxScrolledWindow *training;
     bool profileSaved = false;
     bool logIn = false;
     bool hasUpperCase = false;
@@ -90,11 +92,14 @@ MyFrame::MyFrame(const wxString& title)
     button3->Bind(wxEVT_BUTTON, &MyFrame::OnButton3Click, this);
 
     // Creating panels for each menu item
-    training = new wxPanel(this, wxID_ANY);
+    training = new wxScrolledWindow(this, wxID_ANY);
+    training->SetScrollRate(5, 5);
     nutrition = new wxPanel(this, wxID_ANY);
     profile = new wxPanel(this, wxID_ANY);
     mainPage = new wxPanel(this, wxID_ANY);
     profileMain = new wxPanel(this, wxID_ANY);
+
+
 
     // Setting up content for each panel
     training->SetBackgroundColour(*wxRED);
@@ -533,6 +538,7 @@ void MyFrame::OnAddTrainingDay(wxCommandEvent& event) {
     // Add the list control to the training sizer and update the layout
     trainingSizer->Add(dayNumber, 0, wxALL, 10);
     trainingSizer->Add(listCtrl, 0, wxALL, 10);
+    training->FitInside();
     training->Layout();
     buttonClickCounter++;
 }
