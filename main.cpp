@@ -6,7 +6,7 @@
 #include <fstream>
 #include <wx/radiobut.h>
 #include <wx/listctrl.h>
-
+#include <wx/grid.h>
 
 #include <iostream>
 using namespace std;
@@ -52,12 +52,12 @@ public:
     bool logIn = false;
     bool hasUpperCase = false;
 
-    int buttonClickCounter = 1;  
+    int buttonClickCounter = 1;
 
     wxColour textColor = wxColour(50, 50, 50);
     wxColour textCtrlColor = wxColour(250, 245, 235);
     wxColour buttonColor = wxColour(70, 90, 120);
-    wxColour backgroundColor = wxColour(235, 240, 245);    
+    wxColour backgroundColor = wxColour(235, 240, 245);
 
     sqlite3* db;
 };
@@ -514,45 +514,56 @@ void MyFrame::OnLogOffButtonClick(wxCommandEvent& event) {
     profileMain->Hide();
     logIn = false;
 }
-
-// Event handler for adding a training day.
 void MyFrame::OnAddTrainingDay(wxCommandEvent& event) {
-    // Create a wxListCtrl to display exercises, sets, and reps
-    wxListCtrl* listCtrl = new wxListCtrl(training, wxID_ANY, wxDefaultPosition, wxSize(350, 200), wxLC_REPORT | wxLC_SINGLE_SEL | wxBORDER_SIMPLE);
+    // Create a new grid for the training day
+    wxGrid* gridTrainingDay = new wxGrid(training, wxID_ANY, wxDefaultPosition, wxSize(350, 100));
 
-    
-    wxStaticText* dayNumber = new wxStaticText(training, wxID_ANY, "Day " + wxString::Format("%d", buttonClickCounter), wxDefaultPosition);
+    // Initialize the grid with 1 row and 3 columns
+    gridTrainingDay->CreateGrid(1, 3);
 
-    dayNumber->SetForegroundColour(textColor);
+    // Set column headers
+    gridTrainingDay->SetColLabelValue(0, "Exercise");
+    gridTrainingDay->SetColLabelValue(1, "Weight");
+    gridTrainingDay->SetColLabelValue(2, "Reps");
 
-    // Set the background and text color for the list control
-    wxColour listBackgroundColor(this->textCtrlColor); // Use this-> to refer to the field
-    wxColour listTextColor(this->textColor);             // Use this-> to refer to the field
-    listCtrl->SetBackgroundColour(listBackgroundColor);
-    listCtrl->SetForegroundColour(listTextColor);
+    // Fill the cells with initial data
+    gridTrainingDay->SetCellValue(0, 0, "Push-Ups");   // Column "Exercise"
+    gridTrainingDay->SetCellValue(0, 1, "Bodyweight"); // Column "Weight"
+    gridTrainingDay->SetCellValue(0, 2, "15");         // Column "Reps"
 
-    // Initialize the list control with columns for "Exercise", "Sets", and "Reps"
-    listCtrl->InsertColumn(0, "Exercise", wxLIST_FORMAT_LEFT, 150);
-    listCtrl->InsertColumn(1, "Sets", wxLIST_FORMAT_CENTER, 100);
-    listCtrl->InsertColumn(2, "Reps", wxLIST_FORMAT_CENTER, 100);
+    // Create a label for the day number
+    wxStaticText* dayNumber = new wxStaticText(training, wxID_ANY,
+        "Day " + wxString::Format("%d", buttonClickCounter));
+    dayNumber->SetForegroundColour(textColor); // Set text color
 
-    // Populate the list control with sample data
-    listCtrl->InsertItem(0, "Push-ups");
-    listCtrl->SetItem(0, 1, "3");
-    listCtrl->SetItem(0, 2, "15");
-
-    listCtrl->InsertItem(1, "Squats");
-    listCtrl->SetItem(1, 1, "4");
-    listCtrl->SetItem(1, 2, "20");
-
-    // Add the list control to the training sizer and update the layout
+    // Add the label and the grid to the sizer for the training panel
     trainingSizer->Add(dayNumber, 0, wxALL, 10);
-    trainingSizer->Add(listCtrl, 0, wxALL, 10);
+    trainingSizer->Add(gridTrainingDay, 0, wxALL, 10);
+
+    // Create a button to add rows to the grid
+    wxButton* addRowButton = new wxButton(training, wxID_ANY, "Add Row");
+    addRowButton->SetOwnBackgroundColour(buttonColor);
+
+    // Bind the button event to add rows
+    addRowButton->Bind(wxEVT_BUTTON, [gridTrainingDay](wxCommandEvent&) {
+        // Add a new row to the grid
+        gridTrainingDay->AppendRows(1);
+
+        int newRow = gridTrainingDay->GetNumberRows() - 1;
+        gridTrainingDay->SetCellValue(newRow, 0, "New Exercise");
+        gridTrainingDay->SetCellValue(newRow, 1, "0"); // Default weight
+        gridTrainingDay->SetCellValue(newRow, 2, "0"); // Default reps
+    });
+
+    // Add the button to the training sizer
+    trainingSizer->Add(addRowButton, 0, wxALL, 10);
+
     training->FitInside();
     training->Layout();
+
+    // Increment the day counter
     buttonClickCounter++;
 }
-
 
 // Destructor to close the database
 MyFrame::~MyFrame() {
