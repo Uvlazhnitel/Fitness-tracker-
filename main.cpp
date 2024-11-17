@@ -5,6 +5,8 @@
 #include <sqlite3.h>
 #include <fstream>
 #include <wx/radiobut.h>
+#include <wx/listctrl.h>
+
 
 #include <iostream>
 using namespace std;
@@ -31,7 +33,7 @@ public:
     void OnLogInButtonClickSetUp(wxCommandEvent& event);
     void DisplayUserData(const wxString& name);
     void OnLogOffButtonClick(wxCommandEvent& event);
-    void OnAddButtonClick(wxCommandEvent& event);
+    void OnAddTrainingDay(wxCommandEvent& event);
 
     // UI components
     wxPanel *training, *nutrition, *profile, *mainPage, *profileMain;
@@ -47,6 +49,9 @@ public:
     bool profileSaved = false;
     bool logIn = false;
     bool hasUpperCase = false;
+
+    int buttonClickCounter = 1;    
+
 
     sqlite3* db;
 };
@@ -105,9 +110,6 @@ MyFrame::MyFrame(const wxString& title)
     nutrition->SetSizer(nutritionSizer);
 
     trainingSizer = new wxBoxSizer(wxVERTICAL);
-    addButton = new wxButton(training, wxID_ANY, "Add");
-    addButton->Bind(wxEVT_BUTTON, &MyFrame::OnAddButtonClick, this);
-    trainingSizer->Add(addButton, 0, wxALIGN_CENTER | wxALL, 10);
     training->SetSizer(trainingSizer);
 
     // Adding elements to the profile panel
@@ -238,6 +240,11 @@ MyFrame::MyFrame(const wxString& title)
     profileSizer->AddStretchSpacer(1);
     profile->SetSizer(profileSizer);
 
+    //create button and bind onAddTrainingDay
+    addButtonWeek = new wxButton(training, wxID_ANY, "Add training day");
+    addButtonWeek->Bind(wxEVT_BUTTON, &MyFrame::OnAddTrainingDay, this);
+    trainingSizer->Add(addButtonWeek, 0, wxALIGN_CENTER | wxALL, 10);
+
     // Hide all panels except the first one
     mainPage->Show();
     training->Hide();
@@ -290,6 +297,7 @@ void MyFrame::OnButton1Click(wxCommandEvent& event) {
     training->Show();
     nutrition->Hide();
     profileMain->Hide();
+    profile->Hide();
     mainSizer->Layout();
 }
 
@@ -499,22 +507,37 @@ void MyFrame::OnLogOffButtonClick(wxCommandEvent& event) {
     logIn = false;
 }
 
-void MyFrame::OnAddButtonClick(wxCommandEvent& event) {
-    wxBoxSizer* rowSizer = new wxBoxSizer(wxHORIZONTAL);
+// Event handler for adding a training day.
+void MyFrame::OnAddTrainingDay(wxCommandEvent& event) {
 
-    int itemCount = trainingSizer->GetItemCount();
+    // Create a wxListCtrl to display exercises, sets, and reps
+    wxListCtrl* listCtrl = new wxListCtrl(training, wxID_ANY, wxDefaultPosition, wxSize(350, 200), wxLC_REPORT | wxLC_SINGLE_SEL);
 
-    wxButton* newButton = new wxButton(training, wxID_ANY, wxString::Format("Button %i", itemCount));
-    wxStaticText* buttonText = new wxStaticText(training, wxID_ANY, wxString::Format("Text %i", itemCount));
-    addButtonWeek = new wxButton(training, wxID_ANY, "Add");
-    addButtonWeek->Bind(wxEVT_BUTTON, &MyFrame::OnAddButtonClick, this);
-    rowSizer->Add(newButton, 0, wxALL, 5);
-    rowSizer->Add(buttonText, 0, wxALL, 5);
-    rowSizer->Add(addButtonWeek, 0, wxALL, 5);
+    wxStaticText* dayNumber = new wxStaticText(training, wxID_ANY, "Day " + wxString::Format("%d", buttonClickCounter), wxDefaultPosition);
 
-    trainingSizer->Add(rowSizer, 0, wxEXPAND | wxALL, 5);
 
+    // Initialize the list control with columns for "Exercise", "Sets", and "Reps"
+    listCtrl->InsertColumn(0, "Exercise", wxLIST_FORMAT_LEFT, 150);
+    listCtrl->InsertColumn(1, "Sets", wxLIST_FORMAT_CENTER, 100);
+    listCtrl->InsertColumn(2, "Reps", wxLIST_FORMAT_CENTER, 100);
+
+    // Populate the list control with sample data
+    listCtrl->InsertItem(0, "Push-ups");
+    listCtrl->SetItem(0, 1, "3");
+    listCtrl->SetItem(0, 2, "15");
+
+    listCtrl->InsertItem(1, "Squats");
+    listCtrl->SetItem(1, 1, "4");
+    listCtrl->SetItem(1, 2, "20");
+
+    // Add the list control to the training sizer and update the layout
+    trainingSizer->Add(dayNumber, 0, wxALL, 10);
+    trainingSizer->Add(listCtrl, 0, wxALL, 10);
     training->Layout();
+    buttonClickCounter++;
+}
+
+
 // Destructor to close the database
 MyFrame::~MyFrame() {
     sqlite3_close(db);
