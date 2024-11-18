@@ -303,6 +303,7 @@ void MyFrame::InitializeDatabase() {
     // Создание таблицы TrainingDays
     const char* sqlTrainingDays = "CREATE TABLE IF NOT EXISTS TrainingDays ("
                                   "ID INTEGER PRIMARY KEY AUTOINCREMENT, "
+                                  "Name TEXT NOT NULL, "
                                   "Day TEXT NOT NULL, "
                                   "Exercise TEXT NOT NULL, "
                                   "Weight TEXT NOT NULL, "
@@ -543,10 +544,11 @@ void MyFrame::OnSaveButtonClickTrainingDay(wxCommandEvent &event) {
     }
 
     sqlite3_stmt* stmt;
-    const char* sql = "INSERT INTO TrainingDays (Day, Exercise, Weight, Reps) VALUES (?, ?, ?, ?);";
+    const char* sql = "INSERT INTO TrainingDays (Name, Day, Exercise, Weight, Reps) VALUES (?,?, ?, ?, ?);";
 
+        wxString name = lineForNameLogin->GetValue();
     for (int row = 0; row < rows; ++row) {
-        wxString day = wxString::Format("%d", buttonClickCounter);
+        wxString day = wxString::Format("%d", buttonClickCounter-1);
         wxString exercise = gridTrainingDay->GetCellValue(row, 0);
         wxString weight = gridTrainingDay->GetCellValue(row, 1);
         wxString reps = gridTrainingDay->GetCellValue(row, 2);
@@ -565,11 +567,11 @@ void MyFrame::OnSaveButtonClickTrainingDay(wxCommandEvent &event) {
             wxMessageBox(wxString::Format("SQLite Prepare Error: %s", sqlite3_errmsg(db)), "Error", wxICON_ERROR);
             return;
         }
-
-        sqlite3_bind_text(stmt, 1, day.mb_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 2, exercise.mb_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 3, weight.mb_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 4, reps.mb_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 1, name.mb_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, day.mb_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 3, exercise.mb_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 4, weight.mb_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 5, reps.mb_str(), -1, SQLITE_TRANSIENT);
 
         exit = sqlite3_step(stmt);
         if (exit != SQLITE_DONE) {
