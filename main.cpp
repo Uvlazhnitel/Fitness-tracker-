@@ -516,7 +516,7 @@ void MyFrame::OnLogOffButtonClick(wxCommandEvent& event) {
 }
 void MyFrame::OnAddTrainingDay(wxCommandEvent& event) {
     // Create a new grid for the training day
-    wxGrid* gridTrainingDay = new wxGrid(training, wxID_ANY, wxDefaultPosition, wxSize(350, 100));
+    wxGrid* gridTrainingDay = new wxGrid(training, wxID_ANY, wxDefaultPosition, wxSize(350, 200));
 
     // Initialize the grid with 1 row and 3 columns
     gridTrainingDay->CreateGrid(1, 3);
@@ -554,17 +554,51 @@ void MyFrame::OnAddTrainingDay(wxCommandEvent& event) {
         gridTrainingDay->SetCellValue(newRow, 1, "0"); // Default weight
         gridTrainingDay->SetCellValue(newRow, 2, "0"); // Default reps
     });
+    // Create a button to read grid values
+    wxButton* readValuesButton = new wxButton(training, wxID_ANY, "Read Values");
+    readValuesButton->SetOwnBackgroundColour(buttonColor);
 
+    // Bind the button event to read values
+    readValuesButton->Bind(wxEVT_BUTTON, [gridTrainingDay](wxCommandEvent&) {
+    // Get the number of rows and columns
+    int rows = gridTrainingDay->GetNumberRows();
+    int cols = gridTrainingDay->GetNumberCols();
+
+    // Iterate through all cells
+    for (int row = 0; row < rows; ++row) {
+        for (int col = 0; col < cols; ++col) {
+            // Get the value of the cell
+            wxString cellValue = gridTrainingDay->GetCellValue(row, col);
+            // Print the value to the console
+            std::cout << "Row " << row << ", Col " << col << ": " << cellValue.ToStdString() << std::endl;
+        }
+    }
+});
+
+
+    wxButton *deleteRowButton = new wxButton(training, wxID_ANY, "Delete");
+    deleteRowButton->SetOwnBackgroundColour(buttonColor);
+
+    deleteRowButton->Bind(wxEVT_BUTTON, [gridTrainingDay](wxCommandEvent&) {
+        int rows = gridTrainingDay->GetNumberRows();
+        if (rows>0) {
+            gridTrainingDay->DeleteRows(rows-1);
+
+        } else {
+            wxMessageBox("No rows to delete", "Error", wxICON_ERROR);
+        }
+    });
     // Add the button to the training sizer
+    trainingSizer->Add(deleteRowButton, 0, wxALL, 10);
+    trainingSizer->Add(readValuesButton, 0, wxALL, 10);
     trainingSizer->Add(addRowButton, 0, wxALL, 10);
 
     training->FitInside();
     training->Layout();
 
-    // Increment the day counter
-    buttonClickCounter++;
+// Increment the day counter
+buttonClickCounter++;
 }
-
 // Destructor to close the database
 MyFrame::~MyFrame() {
     sqlite3_close(db);
