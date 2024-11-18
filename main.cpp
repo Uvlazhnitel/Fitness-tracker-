@@ -126,7 +126,7 @@ MyFrame::MyFrame(const wxString& title)
     // Setting up text fields and radio buttons
     boldFont = wxFont(12, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD);
 
-    textOnName = new wxStaticText(profile, wxID_ANY, "Enter your name:");
+    textOnName = new wxStaticText(profile, wxID_ANY, "Enter your username:");
     textOnGender = new wxStaticText(profile, wxID_ANY, "Select your gender:");
     textOnDate = new wxStaticText(profile, wxID_ANY, "Select date of birth:");
     textOnWeight = new wxStaticText(profile, wxID_ANY, "Enter your weight (kg):");
@@ -388,7 +388,7 @@ void MyFrame::OnNameText(wxCommandEvent& event) {
     wxString value = lineForName->GetValue();
     filteredValueName.clear();
     for (wxChar ch : value) {
-        if (wxIsalpha(ch) || ch == ' ') {
+        if (wxIsalpha(ch) || wxIsdigit(ch)) {
             filteredValueName += ch;
         } else {
             lineForName->SetValue(filteredValueName);
@@ -425,6 +425,52 @@ void MyFrame::OnSaveButtonClick(wxCommandEvent& event) {
     wxString weight = lineForWeight->GetValue();
     wxString pass = lineForPass->GetValue();
 
+
+    if (name.IsEmpty()) {
+        wxMessageBox("Name field is empty", "Error", wxICON_ERROR);
+        return;
+    } else if (weight.IsEmpty()) {
+        wxMessageBox("Weight field is empty", "Error", wxICON_ERROR);
+        return;
+    } else if (pass.IsEmpty()) {
+        wxMessageBox("Password field is empty", "Error", wxICON_ERROR);
+        return;
+    } else if (!radioMale->GetValue() && !radioFemale->GetValue()) {
+        wxMessageBox("Gender field is empty", "Error", wxICON_ERROR);
+        return;
+    } else if (!hasUpperCase) {
+        wxMessageBox("Password must contain at least one uppercase letter", "Error", wxICON_ERROR);
+        return;
+    }
+
+    wxString checkSql = "SELECT COUNT(*) FROM Users WHERE Name = ?;";
+    sqlite3_stmt* stmt;
+
+    int exit = sqlite3_prepare_v2(db, checkSql.c_str(), -1, &stmt, nullptr);
+    if (exit != SQLITE_OK) {
+        wxMessageBox("Failed to prepare SQL statement", "Error", wxICON_ERROR);
+        return;
+    }
+
+    sqlite3_bind_text(stmt, 1, name.mb_str(), -1, SQLITE_TRANSIENT);
+    exit = sqlite3_step(stmt);
+
+    if (exit == SQLITE_ROW) {
+        int count = sqlite3_column_int(stmt, 0);
+        sqlite3_finalize(stmt);
+
+        if (count > 0) {
+            wxMessageBox("A user with this username already exists.", "Error", wxICON_ERROR);
+            return;
+        }
+    } else {
+        wxMessageBox("Error checking for existing username", "Error", wxICON_ERROR);
+        sqlite3_finalize(stmt);
+        return;
+    }
+
+    sqlite3_finalize(stmt);
+
     string sql = "INSERT INTO Users (Name, Gender, DateOfBirth, Weight, Password) VALUES ('" +
                  string(name.mb_str()) + "', '" +
                  string(gender.mb_str()) + "', '" +
@@ -433,32 +479,13 @@ void MyFrame::OnSaveButtonClick(wxCommandEvent& event) {
                  string(pass.mb_str()) + "');";
 
     char* errorMessage;
+    exit = sqlite3_exec(db, sql.c_str(), NULL, 0, &errorMessage);
 
-    if(name.IsEmpty()) {
-        wxMessageBox("Name field is empty", "Error", wxICON_ERROR);
-        return;
-    } else if(weight.IsEmpty()) {
-        wxMessageBox("Weight field is empty", "Error", wxICON_ERROR);
-        return;
-    } else if(pass.IsEmpty()) {
-        wxMessageBox("Password field is empty", "Error", wxICON_ERROR);
-        return;
-    } else if(!radioMale->GetValue() && !radioFemale->GetValue()) {
-        wxMessageBox("Gender field is empty", "Error", wxICON_ERROR);
-        return;
-    } else if(!hasUpperCase) {
-        wxMessageBox("Password must contain at least one uppercase letter", "Error", wxICON_ERROR);
-        return;
-    }
-
-    int exit = sqlite3_exec(db, sql.c_str(), NULL, 0, &errorMessage);
     if (exit != SQLITE_OK) {
         wxMessageBox("Failed to save profile data", "Error", wxICON_ERROR);
         sqlite3_free(errorMessage);
     } else {
         wxMessageBox("Profile data saved successfully!", "Success", wxICON_INFORMATION);
-        profile->Hide();
-        mainSizer->Layout();
         profileSaved = true;
     }
 }
@@ -553,12 +580,16 @@ void MyFrame::OnSaveButtonClickTrainingDay(wxCommandEvent &event) {
         wxString weight = gridTrainingDay->GetCellValue(row, 1);
         wxString reps = gridTrainingDay->GetCellValue(row, 2);
 
+        // if(name.IsEmpty()) {
+        //     wxMessageBox("You need to register before saving data", "Error", wxICON_ERROR);
+        //     return;
+        // }
+
         if (exercise.IsEmpty() || weight.IsEmpty() || reps.IsEmpty()) {
             wxMessageBox(wxString::Format("Row %d has empty fields", row), "Error", wxICON_ERROR);
             continue;
         }
 
-        // Отладка данных
         wxMessageBox(wxString::Format("Inserting row: Day=%s, Exercise=%s, Weight=%s, Reps=%s",
                     day, exercise, weight, reps), "Debug Info", wxICON_INFORMATION);
 
@@ -612,6 +643,9 @@ void MyFrame::OnAddTrainingDay(wxCommandEvent& event) {
     trainingSizer->Add(dayNumber, 0, wxALL, 10);
     trainingSizer->Add(gridTrainingDay, 0, wxALL, 10);
 
+    // Create a horizontal sizer for the buttons
+    wxBoxSizer* buttonSizer = new wxBoxSizer(wxHORIZONTAL);
+
     // Create a button to add rows to the grid
     wxButton* addRowButton = new wxButton(training, wxID_ANY, "Add Row");
     addRowButton->SetOwnBackgroundColour(buttonColor);
@@ -630,7 +664,6 @@ void MyFrame::OnAddTrainingDay(wxCommandEvent& event) {
     deleteRowButton = new wxButton(training, wxID_ANY, "Delete");
     deleteRowButton->SetOwnBackgroundColour(buttonColor);
 
-
     deleteRowButton->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
         int rows = gridTrainingDay->GetNumberRows();
         if (rows > 0) {
@@ -640,20 +673,24 @@ void MyFrame::OnAddTrainingDay(wxCommandEvent& event) {
         }
     });
 
-    wxButton *saveButton = new wxButton(training, wxID_ANY, "Save");
+    wxButton* saveButton = new wxButton(training, wxID_ANY, "Save");
     saveButton->SetOwnBackgroundColour(buttonColor);
     saveButton->Bind(wxEVT_BUTTON, &MyFrame::OnSaveButtonClickTrainingDay, this);
-    // Add the button to the training sizer
-    trainingSizer->Add(deleteRowButton, 0, wxALL, 10);
-    trainingSizer->Add(addRowButton, 0, wxALL, 10);
-    trainingSizer->Add(saveButton, 0, wxALL, 10);
+
+    // Add buttons to the horizontal sizer
+
+    buttonSizer->Add(addRowButton, 0, wxALL, 10);
+    buttonSizer->Add(deleteRowButton, 0, wxALL, 10);
+    buttonSizer->Add(saveButton, 0, wxALL, 10);
+
+    // Add the horizontal sizer to the training sizer
+    trainingSizer->Add(buttonSizer, 0, wxALL, 10);
 
     training->FitInside();
     training->Layout();
 
-
-// Increment the day counter
-buttonClickCounter++;
+    // Increment the day counter
+    buttonClickCounter++;
 }
 
 
