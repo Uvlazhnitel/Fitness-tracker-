@@ -276,24 +276,28 @@ MyFrame::MyFrame(const wxString& title)
 
 // Initialize the database
 void MyFrame::InitializeDatabase() {
+    // Открываем базу данных и проверяем результат
     int exit = sqlite3_open("users_data.db", &db);
-
     if (exit != SQLITE_OK) {
-        wxMessageBox(wxString::Format("Error opening database: %s", sqlite3_errmsg(db)), "Error", wxICON_ERROR);
+        wxMessageBox(wxString::Format("Failed to open database: %s", sqlite3_errmsg(db)), "Error", wxICON_ERROR);
+        db = nullptr; // Устанавливаем nullptr, если база данных не открылась
         return;
     }
 
-    char* errorMessage;
+    char* errorMessage = nullptr;
 
-    // Создание таблицы Users (если нужно)
-    const char* sqlUsers = "CREATE TABLE IF NOT EXISTS Users ("
-                           "ID INTEGER PRIMARY KEY AUTOINCREMENT, "
-                           "Name TEXT NOT NULL, "
-                           "Gender TEXT NOT NULL, "
-                           "DateOfBirth TEXT NOT NULL, "
-                           "Weight TEXT NOT NULL, "
-                           "Password TEXT NOT NULL);";
-    exit = sqlite3_exec(db, sqlUsers, NULL, 0, &errorMessage);
+    // Создание таблицы Users
+    const char* sqlUsers = R"(
+        CREATE TABLE IF NOT EXISTS Users (
+            ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            Name TEXT NOT NULL,
+            Gender TEXT NOT NULL,
+            DateOfBirth TEXT NOT NULL,
+            Weight TEXT NOT NULL,
+            Password TEXT NOT NULL
+        );
+    )";
+    exit = sqlite3_exec(db, sqlUsers, nullptr, nullptr, &errorMessage);
     if (exit != SQLITE_OK) {
         wxMessageBox(wxString::Format("Failed to create Users table: %s", errorMessage), "Error", wxICON_ERROR);
         sqlite3_free(errorMessage);
@@ -301,14 +305,17 @@ void MyFrame::InitializeDatabase() {
     }
 
     // Создание таблицы TrainingDays
-    const char* sqlTrainingDays = "CREATE TABLE IF NOT EXISTS TrainingDays ("
-                                  "ID INTEGER PRIMARY KEY AUTOINCREMENT, "
-                                  "Name TEXT NOT NULL, "
-                                  "Day TEXT NOT NULL, "
-                                  "Exercise TEXT NOT NULL, "
-                                  "Weight TEXT NOT NULL, "
-                                  "Reps TEXT NOT NULL);";
-    exit = sqlite3_exec(db, sqlTrainingDays, NULL, 0, &errorMessage);
+    const char* sqlTrainingDays = R"(
+        CREATE TABLE IF NOT EXISTS TrainingDays (
+            ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            Name TEXT NOT NULL,
+            Day TEXT NOT NULL,
+            Exercise TEXT NOT NULL,
+            Weight TEXT NOT NULL,
+            Reps TEXT NOT NULL
+        );
+    )";
+    exit = sqlite3_exec(db, sqlTrainingDays, nullptr, nullptr, &errorMessage);
     if (exit != SQLITE_OK) {
         wxMessageBox(wxString::Format("Failed to create TrainingDays table: %s", errorMessage), "Error", wxICON_ERROR);
         sqlite3_free(errorMessage);
@@ -419,42 +426,61 @@ void MyFrame::OnWeightText(wxCommandEvent& event) {
 
 // Event handler for save button
 void MyFrame::OnSaveButtonClick(wxCommandEvent& event) {
+    if (!db) {
+        wxMessageBox("Database connection is not initialized!", "Error", wxICON_ERROR);
+        return;
+    }
+
+    // Проверяем, что интерфейсные элементы не nullptr
+    if (!lineForName || !lineForWeight || !lineForPass || !radioMale || !radioFemale) {
+        wxMessageBox("Some UI elements are not initialized properly!", "Error", wxICON_ERROR);
+        return;
+    }
+
     wxString name = lineForName->GetValue();
-    wxString gender = radioMale->GetValue() ? "Male" : "Female";
-    wxString dateOfBirthStr = dateOfBirth->GetValue().FormatISODate();
+    wxString gender = (radioMale->GetValue()) ? "Male" : (radioFemale->GetValue()) ? "Female" : "";
+    wxString dateOfBirthStr = dateOfBirth ? dateOfBirth->GetValue().FormatISODate() : "";
     wxString weight = lineForWeight->GetValue();
     wxString pass = lineForPass->GetValue();
 
-
+    // Проверяем входные данные
     if (name.IsEmpty()) {
         wxMessageBox("Name field is empty", "Error", wxICON_ERROR);
         return;
-    } else if (weight.IsEmpty()) {
+    }
+    if (weight.IsEmpty()) {
         wxMessageBox("Weight field is empty", "Error", wxICON_ERROR);
         return;
-    } else if (pass.IsEmpty()) {
+    }
+    if (pass.IsEmpty()) {
         wxMessageBox("Password field is empty", "Error", wxICON_ERROR);
         return;
-    } else if (!radioMale->GetValue() && !radioFemale->GetValue()) {
+    }
+    if (gender.IsEmpty()) {
         wxMessageBox("Gender field is empty", "Error", wxICON_ERROR);
         return;
-    } else if (!hasUpperCase) {
+    }
+    if (!hasUpperCase) {
         wxMessageBox("Password must contain at least one uppercase letter", "Error", wxICON_ERROR);
         return;
     }
 
-    wxString checkSql = "SELECT COUNT(*) FROM Users WHERE Name = ?;";
-    sqlite3_stmt* stmt;
+    // Проверяем соединение с базой данных
+    wxMessageBox("Database connection is open. Proceeding with SQL checks...", "Debug", wxICON_INFORMATION);
 
-    int exit = sqlite3_prepare_v2(db, checkSql.c_str(), -1, &stmt, nullptr);
+    // Проверка существующего пользователя
+    const char* checkSql = "SELECT COUNT(*) FROM Users WHERE Name = ?;";
+    sqlite3_stmt* stmt = nullptr;
+    int exit = sqlite3_prepare_v2(db, checkSql, -1, &stmt, nullptr);
+
     if (exit != SQLITE_OK) {
-        wxMessageBox("Failed to prepare SQL statement", "Error", wxICON_ERROR);
+        wxMessageBox(wxString::Format("Failed to prepare SQL statement (check user): %s", sqlite3_errmsg(db)), "Error", wxICON_ERROR);
         return;
     }
 
     sqlite3_bind_text(stmt, 1, name.mb_str(), -1, SQLITE_TRANSIENT);
-    exit = sqlite3_step(stmt);
 
+    exit = sqlite3_step(stmt);
     if (exit == SQLITE_ROW) {
         int count = sqlite3_column_int(stmt, 0);
         sqlite3_finalize(stmt);
@@ -464,32 +490,42 @@ void MyFrame::OnSaveButtonClick(wxCommandEvent& event) {
             return;
         }
     } else {
-        wxMessageBox("Error checking for existing username", "Error", wxICON_ERROR);
+        wxMessageBox(wxString::Format("Error checking for existing username: %s", sqlite3_errmsg(db)), "Error", wxICON_ERROR);
         sqlite3_finalize(stmt);
         return;
     }
 
     sqlite3_finalize(stmt);
 
-    string sql = "INSERT INTO Users (Name, Gender, DateOfBirth, Weight, Password) VALUES ('" +
-                 string(name.mb_str()) + "', '" +
-                 string(gender.mb_str()) + "', '" +
-                 string(dateOfBirthStr.mb_str()) + "', '" +
-                 string(weight.mb_str()) + "', '" +
-                 string(pass.mb_str()) + "');";
+    // Готовим SQL-запрос для сохранения данных
+    wxMessageBox("Proceeding to save user data...", "Debug", wxICON_INFORMATION);
 
-    char* errorMessage;
-    exit = sqlite3_exec(db, sql.c_str(), NULL, 0, &errorMessage);
+    const char* sql = "INSERT INTO Users (Name, Gender, DateOfBirth, Weight, Password) VALUES (?, ?, ?, ?, ?);";
+    exit = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
 
     if (exit != SQLITE_OK) {
-        wxMessageBox("Failed to save profile data", "Error", wxICON_ERROR);
-        sqlite3_free(errorMessage);
-    } else {
-        wxMessageBox("Profile data saved successfully!", "Success", wxICON_INFORMATION);
-        profileSaved = true;
+        wxMessageBox(wxString::Format("Failed to prepare SQL statement (save user): %s", sqlite3_errmsg(db)), "Error", wxICON_ERROR);
+        return;
     }
-}
 
+    sqlite3_bind_text(stmt, 1, name.mb_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, gender.mb_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 3, dateOfBirthStr.mb_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 4, weight.mb_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 5, pass.mb_str(), -1, SQLITE_TRANSIENT);
+
+    exit = sqlite3_step(stmt);
+
+    if (exit != SQLITE_DONE) {
+        wxMessageBox(wxString::Format("Failed to save profile data: %s", sqlite3_errmsg(db)), "Error", wxICON_ERROR);
+        sqlite3_finalize(stmt);
+        return;
+    }
+
+    sqlite3_finalize(stmt);
+    wxMessageBox("Profile data saved successfully!", "Success", wxICON_INFORMATION);
+    profileSaved = true;
+}
 void MyFrame::OnPassText(wxCommandEvent& eventB) {
     wxString value = lineForPass->GetValue();
     filteredValuePass.clear();
