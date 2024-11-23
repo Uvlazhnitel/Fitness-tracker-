@@ -72,7 +72,7 @@ bool MyApp::OnInit() {
 
 // Main frame constructor
 MyFrame::MyFrame(const wxString& title)
-       : wxFrame(NULL, wxID_ANY, title, wxDefaultPosition, wxSize(800, 600)) {
+       : wxFrame(NULL, wxID_ANY, title, wxPoint(1020,400), wxSize(800, 600)) {
 
     InitializeDatabase();
 
@@ -273,20 +273,17 @@ MyFrame::MyFrame(const wxString& title)
 
     SetSizer(mainSizer);
 }
-
 // Initialize the database
 void MyFrame::InitializeDatabase() {
-    // Открываем базу данных и проверяем результат
     int exit = sqlite3_open("users_data.db", &db);
     if (exit != SQLITE_OK) {
         wxMessageBox(wxString::Format("Failed to open database: %s", sqlite3_errmsg(db)), "Error", wxICON_ERROR);
-        db = nullptr; // Устанавливаем nullptr, если база данных не открылась
+        db = nullptr;
         return;
     }
 
     char* errorMessage = nullptr;
 
-    // Создание таблицы Users
     const char* sqlUsers = R"(
         CREATE TABLE IF NOT EXISTS Users (
             ID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -304,7 +301,6 @@ void MyFrame::InitializeDatabase() {
         return;
     }
 
-    // Создание таблицы TrainingDays
     const char* sqlTrainingDays = R"(
         CREATE TABLE IF NOT EXISTS TrainingDays (
             ID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -431,7 +427,6 @@ void MyFrame::OnSaveButtonClick(wxCommandEvent& event) {
         return;
     }
 
-    // Проверяем, что интерфейсные элементы не nullptr
     if (!lineForName || !lineForWeight || !lineForPass || !radioMale || !radioFemale) {
         wxMessageBox("Some UI elements are not initialized properly!", "Error", wxICON_ERROR);
         return;
@@ -443,7 +438,6 @@ void MyFrame::OnSaveButtonClick(wxCommandEvent& event) {
     wxString weight = lineForWeight->GetValue();
     wxString pass = lineForPass->GetValue();
 
-    // Проверяем входные данные
     if (name.IsEmpty()) {
         wxMessageBox("Name field is empty", "Error", wxICON_ERROR);
         return;
@@ -465,10 +459,8 @@ void MyFrame::OnSaveButtonClick(wxCommandEvent& event) {
         return;
     }
 
-    // Проверяем соединение с базой данных
     wxMessageBox("Database connection is open. Proceeding with SQL checks...", "Debug", wxICON_INFORMATION);
 
-    // Проверка существующего пользователя
     const char* checkSql = "SELECT COUNT(*) FROM Users WHERE Name = ?;";
     sqlite3_stmt* stmt = nullptr;
     int exit = sqlite3_prepare_v2(db, checkSql, -1, &stmt, nullptr);
@@ -497,7 +489,6 @@ void MyFrame::OnSaveButtonClick(wxCommandEvent& event) {
 
     sqlite3_finalize(stmt);
 
-    // Готовим SQL-запрос для сохранения данных
     wxMessageBox("Proceeding to save user data...", "Debug", wxICON_INFORMATION);
 
     const char* sql = "INSERT INTO Users (Name, Gender, DateOfBirth, Weight, Password) VALUES (?, ?, ?, ?, ?);";
@@ -594,81 +585,19 @@ void MyFrame::OnLogOffButtonClick(wxCommandEvent& event) {
     profileMain->Hide();
     logIn = false;
 }
-void MyFrame::OnSaveButtonClickTrainingDay(wxCommandEvent &event) {
-    if (!gridTrainingDay) {
-        wxMessageBox("Grid is not initialized", "Error", wxICON_ERROR);
-        return;
-    }
-
-    int rows = gridTrainingDay->GetNumberRows();
-    if (rows == 0) {
-        wxMessageBox("No data in the grid", "Error", wxICON_ERROR);
-        return;
-    }
-
-    sqlite3_stmt* stmt;
-    const char* sql = "INSERT INTO TrainingDays (Name, Day, Exercise, Weight, Reps) VALUES (?,?, ?, ?, ?);";
-
-        wxString name = lineForNameLogin->GetValue();
-    for (int row = 0; row < rows; ++row) {
-        wxString day = wxString::Format("%d", buttonClickCounter-1);
-        wxString exercise = gridTrainingDay->GetCellValue(row, 0);
-        wxString weight = gridTrainingDay->GetCellValue(row, 1);
-        wxString reps = gridTrainingDay->GetCellValue(row, 2);
-
-        // if(name.IsEmpty()) {
-        //     wxMessageBox("You need to register before saving data", "Error", wxICON_ERROR);
-        //     return;
-        // }
-
-        if (exercise.IsEmpty() || weight.IsEmpty() || reps.IsEmpty()) {
-            wxMessageBox(wxString::Format("Row %d has empty fields", row), "Error", wxICON_ERROR);
-            continue;
-        }
-
-        wxMessageBox(wxString::Format("Inserting row: Day=%s, Exercise=%s, Weight=%s, Reps=%s",
-                    day, exercise, weight, reps), "Debug Info", wxICON_INFORMATION);
-
-        int exit = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
-        if (exit != SQLITE_OK) {
-            wxMessageBox(wxString::Format("SQLite Prepare Error: %s", sqlite3_errmsg(db)), "Error", wxICON_ERROR);
-            return;
-        }
-        sqlite3_bind_text(stmt, 1, name.mb_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 2, day.mb_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 3, exercise.mb_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 4, weight.mb_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 5, reps.mb_str(), -1, SQLITE_TRANSIENT);
-
-        exit = sqlite3_step(stmt);
-        if (exit != SQLITE_DONE) {
-            wxMessageBox(wxString::Format("SQLite Step Error: %s", sqlite3_errmsg(db)), "Error", wxICON_ERROR);
-            sqlite3_finalize(stmt);
-            return;
-        }
-
-        sqlite3_finalize(stmt);
-    }
-
-    wxMessageBox("Data saved successfully!", "Success", wxICON_INFORMATION);
-}
-
 void MyFrame::OnAddTrainingDay(wxCommandEvent& event) {
     // Create a new grid for the training day
     gridTrainingDay = new wxGrid(training, wxID_ANY, wxDefaultPosition, wxSize(350, 200));
 
-    // Initialize the grid with 1 row and 3 columns
-    gridTrainingDay->CreateGrid(1, 3);
+    // Initialize the grid with 1 row and 4 columns (3 visible + 1 hidden for ID)
+    gridTrainingDay->CreateGrid(1, 4);
 
     // Set column headers
     gridTrainingDay->SetColLabelValue(0, "Exercise");
     gridTrainingDay->SetColLabelValue(1, "Weight");
     gridTrainingDay->SetColLabelValue(2, "Reps");
-
-    // Fill the cells with initial data
-    gridTrainingDay->SetCellValue(0, 0, "Push-Ups");   // Column "Exercise"
-    gridTrainingDay->SetCellValue(0, 1, "20"); // Column "Weight"
-    gridTrainingDay->SetCellValue(0, 2, "15");         // Column "Reps"
+    gridTrainingDay->SetColLabelValue(3, "ID"); // Hidden column for database ID
+    gridTrainingDay->HideCol(3);               // Hide the ID column
 
     // Create a label for the day number
     wxStaticText* dayNumber = new wxStaticText(training, wxID_ANY,
@@ -695,26 +624,56 @@ void MyFrame::OnAddTrainingDay(wxCommandEvent& event) {
         gridTrainingDay->SetCellValue(newRow, 0, "New Exercise");
         gridTrainingDay->SetCellValue(newRow, 1, "0"); // Default weight
         gridTrainingDay->SetCellValue(newRow, 2, "0"); // Default reps
+        gridTrainingDay->SetCellValue(newRow, 3, "");  // Empty ID for new rows
     });
 
-    deleteRowButton = new wxButton(training, wxID_ANY, "Delete");
+    // Create a button to delete rows
+    wxButton* deleteRowButton = new wxButton(training, wxID_ANY, "Delete");
     deleteRowButton->SetOwnBackgroundColour(buttonColor);
 
     deleteRowButton->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
-        int rows = gridTrainingDay->GetNumberRows();
-        if (rows > 0) {
-            gridTrainingDay->DeleteRows(rows - 1);
-        } else {
-            wxMessageBox("No rows to delete", "Error", wxICON_ERROR);
+        int selectedRow = gridTrainingDay->GetGridCursorRow();
+        if (selectedRow < 0 || selectedRow >= gridTrainingDay->GetNumberRows()) {
+            wxMessageBox("No valid row selected to delete", "Error", wxICON_ERROR);
+            return;
         }
+
+        // Get the ID from the hidden column
+        wxString id = gridTrainingDay->GetCellValue(selectedRow, 3); // Hidden column for ID
+        if (!id.IsEmpty()) {
+            // Delete the corresponding row in the database
+            const char* sqlDelete = "DELETE FROM TrainingDays WHERE ID = ?;";
+            sqlite3_stmt* stmt;
+            int exit = sqlite3_prepare_v2(db, sqlDelete, -1, &stmt, nullptr);
+
+            if (exit != SQLITE_OK) {
+                wxMessageBox(wxString::Format("Failed to prepare SQL statement for deletion: %s", sqlite3_errmsg(db)), "Error", wxICON_ERROR);
+                return;
+            }
+
+            sqlite3_bind_text(stmt, 1, id.mb_str(), -1, SQLITE_TRANSIENT);
+            exit = sqlite3_step(stmt);
+
+            if (exit != SQLITE_DONE) {
+                wxMessageBox(wxString::Format("Failed to delete row from database: %s", sqlite3_errmsg(db)), "Error", wxICON_ERROR);
+                sqlite3_finalize(stmt);
+                return;
+            }
+
+            sqlite3_finalize(stmt);
+        }
+
+        // Remove the row from the grid
+        gridTrainingDay->DeleteRows(selectedRow);
+        wxMessageBox("Row deleted successfully", "Success", wxICON_INFORMATION);
     });
 
+    // Create a button to save the grid data to the database
     wxButton* saveButton = new wxButton(training, wxID_ANY, "Save");
     saveButton->SetOwnBackgroundColour(buttonColor);
     saveButton->Bind(wxEVT_BUTTON, &MyFrame::OnSaveButtonClickTrainingDay, this);
 
     // Add buttons to the horizontal sizer
-
     buttonSizer->Add(addRowButton, 0, wxALL, 10);
     buttonSizer->Add(deleteRowButton, 0, wxALL, 10);
     buttonSizer->Add(saveButton, 0, wxALL, 10);
@@ -727,6 +686,65 @@ void MyFrame::OnAddTrainingDay(wxCommandEvent& event) {
 
     // Increment the day counter
     buttonClickCounter++;
+}
+
+void MyFrame::OnSaveButtonClickTrainingDay(wxCommandEvent& event) {
+    if (!gridTrainingDay) {
+        wxMessageBox("Grid is not initialized", "Error", wxICON_ERROR);
+        return;
+    }
+
+    int rows = gridTrainingDay->GetNumberRows();
+    if (rows == 0) {
+        wxMessageBox("No data in the grid", "Error", wxICON_ERROR);
+        return;
+    }
+
+    sqlite3_stmt* stmt;
+    const char* sql = "INSERT INTO TrainingDays (Name, Day, Exercise, Weight, Reps) VALUES (?, ?, ?, ?, ?);";
+
+    wxString name = lineForNameLogin->GetValue();
+    wxString day = wxString::Format("%d", buttonClickCounter - 1);
+
+    for (int row = 0; row < rows; ++row) {
+        wxString exercise = gridTrainingDay->GetCellValue(row, 0);
+        wxString weight = gridTrainingDay->GetCellValue(row, 1);
+        wxString reps = gridTrainingDay->GetCellValue(row, 2);
+        wxString id = gridTrainingDay->GetCellValue(row, 3);
+
+        if (exercise.IsEmpty() || weight.IsEmpty() || reps.IsEmpty()) {
+            wxMessageBox(wxString::Format("Row %d has empty fields", row), "Error", wxICON_ERROR);
+            continue;
+        }
+
+        if (id.IsEmpty()) {
+            // Insert new row into the database
+            int exit = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
+            if (exit != SQLITE_OK) {
+                wxMessageBox(wxString::Format("SQLite Prepare Error: %s", sqlite3_errmsg(db)), "Error", wxICON_ERROR);
+                return;
+            }
+
+            sqlite3_bind_text(stmt, 1, name.mb_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(stmt, 2, day.mb_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(stmt, 3, exercise.mb_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(stmt, 4, weight.mb_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(stmt, 5, reps.mb_str(), -1, SQLITE_TRANSIENT);
+
+            exit = sqlite3_step(stmt);
+            if (exit != SQLITE_DONE) {
+                wxMessageBox(wxString::Format("SQLite Step Error: %s", sqlite3_errmsg(db)), "Error", wxICON_ERROR);
+                sqlite3_finalize(stmt);
+                return;
+            }
+
+            int lastInsertRowID = sqlite3_last_insert_rowid(db);
+            gridTrainingDay->SetCellValue(row, 3, wxString::Format("%d", lastInsertRowID));
+            sqlite3_finalize(stmt);
+        }
+    }
+
+    wxMessageBox("Data saved successfully!", "Success", wxICON_INFORMATION);
 }
 
 
