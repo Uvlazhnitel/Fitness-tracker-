@@ -587,7 +587,7 @@ void MyFrame::OnLogOffButtonClick(wxCommandEvent& event) {
 }
 void MyFrame::OnAddTrainingDay(wxCommandEvent& event) {
     // Create a new grid for the training day
-    gridTrainingDay = new wxGrid(training, wxID_ANY, wxDefaultPosition, wxSize(350, 200));
+    wxGrid* gridTrainingDay = new wxGrid(training, wxID_ANY, wxDefaultPosition, wxSize(350, 200));
 
     // Initialize the grid with 1 row and 4 columns (3 visible + 1 hidden for ID)
     gridTrainingDay->CreateGrid(1, 4);
@@ -615,9 +615,8 @@ void MyFrame::OnAddTrainingDay(wxCommandEvent& event) {
     wxButton* addRowButton = new wxButton(training, wxID_ANY, "Add Row");
     addRowButton->SetOwnBackgroundColour(buttonColor);
 
-    // Bind the button event to add rows
-    addRowButton->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
-        // Add a new row to the grid
+    // Bind the button event to add rows specifically for this grid
+    addRowButton->Bind(wxEVT_BUTTON, [gridTrainingDay](wxCommandEvent&) {
         gridTrainingDay->AppendRows(1);
 
         int newRow = gridTrainingDay->GetNumberRows() - 1;
@@ -631,42 +630,42 @@ void MyFrame::OnAddTrainingDay(wxCommandEvent& event) {
     wxButton* deleteRowButton = new wxButton(training, wxID_ANY, "Delete");
     deleteRowButton->SetOwnBackgroundColour(buttonColor);
 
-    deleteRowButton->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
-        int selectedRow = gridTrainingDay->GetGridCursorRow();
-        if (selectedRow < 0 || selectedRow >= gridTrainingDay->GetNumberRows()) {
-            wxMessageBox("No valid row selected to delete", "Error", wxICON_ERROR);
+    deleteRowButton->Bind(wxEVT_BUTTON, [this, gridTrainingDay](wxCommandEvent&) {
+    int selectedRow = gridTrainingDay->GetGridCursorRow();
+    if (selectedRow < 0 || selectedRow >= gridTrainingDay->GetNumberRows()) {
+        wxMessageBox("No valid row selected to delete", "Error", wxICON_ERROR);
+        return;
+    }
+
+    // Get the ID from the hidden column
+    wxString id = gridTrainingDay->GetCellValue(selectedRow, 3); // Hidden column for ID
+    if (!id.IsEmpty()) {
+        // Delete the corresponding row in the database
+        const char* sqlDelete = "DELETE FROM TrainingDays WHERE ID = ?;";
+        sqlite3_stmt* stmt;
+        int exit = sqlite3_prepare_v2(db, sqlDelete, -1, &stmt, nullptr);
+
+        if (exit != SQLITE_OK) {
+            wxMessageBox(wxString::Format("Failed to prepare SQL statement for deletion: %s", sqlite3_errmsg(db)), "Error", wxICON_ERROR);
             return;
         }
 
-        // Get the ID from the hidden column
-        wxString id = gridTrainingDay->GetCellValue(selectedRow, 3); // Hidden column for ID
-        if (!id.IsEmpty()) {
-            // Delete the corresponding row in the database
-            const char* sqlDelete = "DELETE FROM TrainingDays WHERE ID = ?;";
-            sqlite3_stmt* stmt;
-            int exit = sqlite3_prepare_v2(db, sqlDelete, -1, &stmt, nullptr);
+        sqlite3_bind_text(stmt, 1, id.mb_str(), -1, SQLITE_TRANSIENT);
+        exit = sqlite3_step(stmt);
 
-            if (exit != SQLITE_OK) {
-                wxMessageBox(wxString::Format("Failed to prepare SQL statement for deletion: %s", sqlite3_errmsg(db)), "Error", wxICON_ERROR);
-                return;
-            }
-
-            sqlite3_bind_text(stmt, 1, id.mb_str(), -1, SQLITE_TRANSIENT);
-            exit = sqlite3_step(stmt);
-
-            if (exit != SQLITE_DONE) {
-                wxMessageBox(wxString::Format("Failed to delete row from database: %s", sqlite3_errmsg(db)), "Error", wxICON_ERROR);
-                sqlite3_finalize(stmt);
-                return;
-            }
-
+        if (exit != SQLITE_DONE) {
+            wxMessageBox(wxString::Format("Failed to delete row from database: %s", sqlite3_errmsg(db)), "Error", wxICON_ERROR);
             sqlite3_finalize(stmt);
+            return;
         }
 
-        // Remove the row from the grid
-        gridTrainingDay->DeleteRows(selectedRow);
-        wxMessageBox("Row deleted successfully", "Success", wxICON_INFORMATION);
-    });
+        sqlite3_finalize(stmt);
+    }
+
+    // Remove the row from the grid
+    gridTrainingDay->DeleteRows(selectedRow);
+    wxMessageBox("Row deleted successfully", "Success", wxICON_INFORMATION);
+});
 
     // Create a button to save the grid data to the database
     wxButton* saveButton = new wxButton(training, wxID_ANY, "Save");
